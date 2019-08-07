@@ -1,0 +1,3 @@
+[submodule "MULTEM"]
+	path = MULTEM
+	url = git@github.com:rosalindfranklininstitute/MULTEM.git
