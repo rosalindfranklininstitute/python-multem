@@ -1,6 +1,5 @@
 
 import multem
-import numpy
 
 input_multislice = multem.Input()
 config = multem.SystemConfiguration()
