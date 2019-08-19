@@ -1,4 +1,3 @@
-
 import multem
 
 input_multislice = multem.Input()
@@ -9,4 +8,4 @@ config = multem.SystemConfiguration()
 config.device = "host"
 result = multem.simulate(config, input_multislice)
 
-#print(result)
+# print(result)

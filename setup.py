@@ -10,7 +10,7 @@ from setuptools import find_packages
 
 class GcovCommand(Command):
 
-    description = 'run gcovr to output C/C++ coverage statistics'
+    description = "run gcovr to output C/C++ coverage statistics"
 
     user_options = []
 
