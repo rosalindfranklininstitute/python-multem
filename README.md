@@ -26,5 +26,5 @@ Please use the [GitHub issue tracker](https://github.com/rosalindfranklininstitu
 
 Copyright Diamond Light Source, 2019.
 
-Distributed under the terms of the GPLv3 license, halerror is free and open source software.
+Distributed under the terms of the GPLv3 license, python-multem is free and open source software.
 

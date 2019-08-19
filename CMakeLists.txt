@@ -7,9 +7,11 @@ project(multem CXX CUDA)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Need pybind11 for Python C/C++ extensions
-find_package(pybind11 REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(FFTW REQUIRED)
+
+# Add pybind sub directory
+add_subdirectory(pybind11)
 
 # Turn off LTO (has problems with cuda)
 set(HAS_FLTO False)
