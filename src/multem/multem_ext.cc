@@ -170,11 +170,14 @@ namespace pybind11 { namespace detail {
         if (buffer.ndim != 2) {
           throw std::runtime_error("Number of dimensions must be two");
         }
+        if (buffer.shape[0] < 0 || buffer.shape[1] < 0) {
+          throw std::runtime_error("Size must be greater than 0");
+        }
         return multem::Image<T>(
           (T *) buffer.ptr, 
           typename multem::Image<T>::shape_type({
-            buffer.shape[0], 
-            buffer.shape[1]}));
+            (std::size_t) buffer.shape[0], 
+            (std::size_t) buffer.shape[1]}));
       }))
       .def_buffer([](multem::Image<T>& self) -> pybind11::buffer_info { 
         typedef typename multem::Image<T>::value_type value_type;
