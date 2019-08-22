@@ -845,6 +845,11 @@ namespace multem {
       return input_multislice;
     }
 
+    /**
+     * Convert the mt::Output_Multislice object to a multem::Output object
+     * @param output_multislice The mt::Output_Multislice object
+     * @returns Output The multem::Output object
+     */
     template <typename FloatType>
     Output write_output_multislice(const mt::Output_Multislice<FloatType> &output_multislice) {
       
@@ -915,6 +920,12 @@ namespace multem {
     }
   }
 
+  /**
+   * Run the multislice simulation. 
+   * @param config The system configuration
+   * @param input The input object
+   * @returns The output results
+   */
   template <typename FloatType, mt::eDevice DeviceType>
   Output run_multislice(SystemConfiguration config, Input input) {
 
