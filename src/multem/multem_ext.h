@@ -19,6 +19,9 @@
 
 namespace multem {
 
+  /**
+   * A class to represent atom data
+   */
   class Atom {
   public:
       int element;
@@ -41,6 +44,9 @@ namespace multem {
           charge(0) {}
   };
 
+  /**
+   * A class to hold crystal parameters
+   */
   class CrystalParameters {
   public:
     
@@ -64,6 +70,9 @@ namespace multem {
 
   };
 
+  /**
+   * A class to hold amorphous layer information
+   */
   class AmorphousLayer {
   public:
 
@@ -78,6 +87,9 @@ namespace multem {
 
   };
 
+  /**
+   * A class to hold STEM detector information
+   */
   class STEMDetector {
   public:
 
@@ -112,6 +124,9 @@ namespace multem {
     std::vector<Matrix> matrix;
   };
 
+  /**
+   * A class to hold the input specification for the simulation
+   */
   class Input {
   public:
 

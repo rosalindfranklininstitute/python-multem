@@ -83,83 +83,80 @@ namespace pybind11 { namespace detail {
     }
   };
  
-
-
- 
-  /* template <> */ 
-  /* class type_caster<multem::STEMDetector::Angles> { */
-  /* public: */
+  template <> 
+  class type_caster<multem::STEMDetector::Angles> {
+  public:
   
-  /*   PYBIND11_TYPE_CASTER(multem::STEMDetector::Angles, _("multem::STEMDetector::Angles")); */
+    PYBIND11_TYPE_CASTER(multem::STEMDetector::Angles, _("multem::STEMDetector::Angles"));
 
-  /*   bool load(object src, bool convert) { */
-  /*     if (py::isinstance<py::tuple>(src)) { */
-  /*       py::tuple t = py::cast<py::tuple>(src); */
-  /*       if (py::len(t) == 2) { */
-  /*         value.inner_ang = py::cast<double>(t[0]); */
-  /*         value.outer_ang = py::cast<double>(t[1]); */
-  /*         return true; */
-  /*       } */
-  /*     } */
-  /*     return false; */
-  /*   } */
+    bool load(object src, bool convert) {
+      if (py::isinstance<py::tuple>(src)) {
+        py::tuple t = py::cast<py::tuple>(src);
+        if (py::len(t) == 2) {
+          value.inner_ang = py::cast<double>(t[0]);
+          value.outer_ang = py::cast<double>(t[1]);
+          return true;
+        }
+      }
+      return false;
+    }
 
-  /*   static handle cast(multem::STEMDetector::Angles src, return_value_policy policy, handle parent) { */
-  /*     return py::make_tuple( */
-  /*       src.inner_ang, */ 
-  /*       src.outer_ang).release(); */
-  /*   } */
-  /* }; */
+    static handle cast(multem::STEMDetector::Angles src, return_value_policy policy, handle parent) {
+      return py::make_tuple(
+        src.inner_ang, 
+        src.outer_ang).release();
+    }
+  };
   
-  /* template <> */ 
-  /* class type_caster<multem::STEMDetector::Radial> { */
-  /* public: */
+  template <> 
+  class type_caster<multem::STEMDetector::Radial> {
+  public:
   
-  /*   PYBIND11_TYPE_CASTER(multem::STEMDetector::Radial, _("multem::STEMDetector::Radial")); */
+    PYBIND11_TYPE_CASTER(multem::STEMDetector::Radial, _("multem::STEMDetector::Radial"));
 
-  /*   bool load(object src, bool convert) { */
-  /*     if (py::isinstance<py::tuple>(src)) { */
-  /*       py::tuple t = py::cast<py::tuple>(src); */
-  /*       if (py::len(t) == 2) { */
-  /*         value.x = py::cast<double>(t[0]); */
-  /*         value.fx = py::cast<double>(t[1]); */
-  /*         return true; */
-  /*       } */
-  /*     } */
-  /*     return false; */
-  /*   } */
+    bool load(object src, bool convert) {
+      if (py::isinstance<py::tuple>(src)) {
+        py::tuple t = py::cast<py::tuple>(src);
+        if (py::len(t) == 2) {
+          value.x = py::cast<double>(t[0]);
+          value.fx = py::cast<std::vector<double>>(t[1]);
+          return true;
+        }
+      }
+      return false;
+    }
 
-  /*   static handle cast(multem::STEMDetector::Radial src, return_value_policy policy, handle parent) { */
-  /*     return py::make_tuple( */
-  /*       src.x, */ 
-  /*       src.fx).release(); */
-  /*   } */
-  /* }; */
+    static handle cast(multem::STEMDetector::Radial src, return_value_policy policy, handle parent) {
+      return py::make_tuple(
+        src.x, 
+        src.fx).release();
+    }
+  };
   
-  /* template <> */ 
-  /* class type_caster<multem::STEMDetector::Matrix> { */
-  /* public: */
+  template <> 
+  class type_caster<multem::STEMDetector::Matrix> {
+  public:
   
-  /*   PYBIND11_TYPE_CASTER(multem::STEMDetector::Matrix, _("multem::STEMDetector::Matrix")); */
+    PYBIND11_TYPE_CASTER(multem::STEMDetector::Matrix, _("multem::STEMDetector::Matrix"));
 
-  /*   bool load(object src, bool convert) { */
-  /*     if (py::isinstance<py::tuple>(src)) { */
-  /*       py::tuple t = py::cast<py::tuple>(src); */
-  /*       if (py::len(t) == 2) { */
-  /*         value.R = py::cast<double>(t[0]); */
-  /*         value.fR = py::cast<double>(t[1]); */
-  /*         return true; */
-  /*       } */
-  /*     } */
-  /*     return false; */
-  /*   } */
+    bool load(object src, bool convert) {
+      if (py::isinstance<py::tuple>(src)) {
+        py::tuple t = py::cast<py::tuple>(src);
+        if (py::len(t) == 2) {
+          value.R = py::cast<double>(t[0]);
+          value.fR = py::cast<std::vector<double>>(t[1]);
+          return true;
+        }
+      }
+      return false;
+    }
 
-  /*   static handle cast(multem::STEMDetector::Matrix src, return_value_policy policy, handle parent) { */
-  /*     return py::make_tuple( */
-  /*       src.R, */ 
-  /*       src.fR).release(); */
-  /*   } */
-  /* }; */
+    static handle cast(multem::STEMDetector::Matrix src, return_value_policy policy, handle parent) {
+      return py::make_tuple(
+        src.R, 
+        src.fR).release();
+    }
+  };
 
   template <typename T>
   py::class_< multem::Image<T> > image_class(py::module &m, const char *name) {
@@ -213,6 +210,7 @@ PYBIND11_MODULE(multem_ext, m)
     ;
  
   py::class_<multem::STEMDetector>(m, "STEMDetector")
+    .def(py::init<>())
     .def_readwrite("type", &multem::STEMDetector::type)
     .def_readwrite("cir", &multem::STEMDetector::cir)
     .def_readwrite("radial", &multem::STEMDetector::radial)
