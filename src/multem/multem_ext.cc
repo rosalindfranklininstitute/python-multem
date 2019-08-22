@@ -19,6 +19,9 @@ namespace py = pybind11;
 
 namespace pybind11 { namespace detail {
   
+  /**
+   * Type cast a multem::Atom object to a tuple
+   */
   template <> 
   class type_caster<multem::Atom> {
   public:
@@ -56,6 +59,9 @@ namespace pybind11 { namespace detail {
     }
   };
   
+  /**
+   * Type cast a multem::AmorphousLayer object to a tuple
+   */
   template <> 
   class type_caster<multem::AmorphousLayer> {
   public:
@@ -83,6 +89,9 @@ namespace pybind11 { namespace detail {
     }
   };
  
+  /**
+   * Type cast a multem::STEMDetector::Angles object to a tuple
+   */
   template <> 
   class type_caster<multem::STEMDetector::Angles> {
   public:
@@ -108,6 +117,9 @@ namespace pybind11 { namespace detail {
     }
   };
   
+  /**
+   * Type cast a multem::STEMDetector::Radial object to a tuple
+   */
   template <> 
   class type_caster<multem::STEMDetector::Radial> {
   public:
@@ -133,6 +145,9 @@ namespace pybind11 { namespace detail {
     }
   };
   
+  /**
+   * Type cast a multem::STEMDetector::Matrix object to a tuple
+   */
   template <> 
   class type_caster<multem::STEMDetector::Matrix> {
   public:
@@ -158,6 +173,9 @@ namespace pybind11 { namespace detail {
     }
   };
 
+  /**
+   * Wrap a multem::Image<T> class as a buffer object
+   */
   template <typename T>
   py::class_< multem::Image<T> > image_class(py::module &m, const char *name) {
     return py::class_< multem::Image<T> >(m, name, py::buffer_protocol())
@@ -198,6 +216,7 @@ namespace pybind11 { namespace detail {
 
 PYBIND11_MODULE(multem_ext, m)
 {
+  // Wrap the multem::CrystalParameters class
   py::class_<multem::CrystalParameters>(m, "CrystalParameters")
     .def(py::init<>())
     .def_readwrite("na", &multem::CrystalParameters::na)
@@ -209,6 +228,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("layers", &multem::CrystalParameters::layers)
     ;
  
+  // Wrap the multem::STEMDetector class
   py::class_<multem::STEMDetector>(m, "STEMDetector")
     .def(py::init<>())
     .def_readwrite("type", &multem::STEMDetector::type)
@@ -217,6 +237,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("matrix", &multem::STEMDetector::matrix)
     ;
 
+  // Wrap the multem::Input class
   py::class_<multem::Input>(m, "Input")
     .def(py::init<>())
     .def_readwrite("interaction_model", &multem::Input::interaction_model) 
@@ -358,6 +379,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("output_area_iy_e", &multem::Input::output_area_iy_e)
     ;
 
+  // Wrap the multem::SystemConfiguration class
   py::class_<multem::SystemConfiguration>(m, "SystemConfiguration")
     .def(py::init<>())
     .def_readwrite("device", &multem::SystemConfiguration::device)
@@ -368,9 +390,11 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("gpu_nstream", &multem::SystemConfiguration::gpu_nstream)
     ;
 
+  // Wrap a double and complex image class
   py::detail::image_class<double>(m, "ImageDouble");
   py::detail::image_class< std::complex<double> >(m, "ImageComplexDouble");
 
+  // Wrap the multem::Data class
   py::class_<multem::Data>(m, "Data")
     .def(py::init<>())
     .def_readwrite("image_tot", &multem::Data::image_tot)
@@ -380,6 +404,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("psi_coh", &multem::Data::psi_coh)
     ;
 
+  // Wrap the multem::Output class
   py::class_<multem::Output>(m, "Output")
     .def(py::init<>())
     .def_readwrite("dx", &multem::Output::dx)
@@ -390,8 +415,10 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("data", &multem::Output::data)
     ;
 
+  // Expose the simulation function
   m.def("simulate", &multem::simulate);
 
+  // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);
   m.def("number_of_gpu_available", &multem::number_of_gpu_available);
 

@@ -457,6 +457,12 @@ namespace multem {
       }
     };
 
+    /**
+     * Run the multislice simulation
+     * @param system_conf The system configuration
+     * @param input_multislice The input object
+     * @param output_multislice The output object
+     */
     template <typename FloatType, mt::eDevice DeviceType>
     void run_multislice_internal(
       const mt::System_Configuration &system_conf,
@@ -501,6 +507,12 @@ namespace multem {
       }
     }
  
+    /**
+     * Convert the multem::SystemConfiguration object to a
+     * mt::System_Configuration object
+     * @param config The multem::SystemConfiguration object
+     * @returns The mt::System_Configuration object
+     */
     mt::System_Configuration read_system_configuration(const SystemConfiguration &config) {
       mt::System_Configuration system_conf;
       system_conf.device = detail::from_string<mt::eDevice>(config.device);
@@ -515,6 +527,12 @@ namespace multem {
       return system_conf;
     } 
     
+    /**
+     * Convert the multem::Input object to a
+     * mt::Input_Multislice object
+     * @param config The multem::Input object
+     * @returns The mt::Input_Multislice object
+     */
     template <typename FloatType>
     mt::Input_Multislice<FloatType> read_input_multislice(
         const Input &input,

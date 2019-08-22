@@ -572,11 +572,24 @@ namespace multem {
 
   };
 
+  /**
+   * Run the simulation
+   * @param config The system configuration
+   * @param input The input
+   * @returns The simulation results
+   */
   Output simulate(SystemConfiguration config, Input input);
 
+  /**
+   * @returns True/False if the GPU is available
+   */
   bool is_gpu_available();
+
+  /**
+   * @returns The number of available GPUs
+   */
   int number_of_gpu_available();
-  
+
   double mrad_to_sigma(double E0, double theta);
   double iehwgd_to_sigma(double value);
 
