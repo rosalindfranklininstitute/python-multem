@@ -7,13 +7,14 @@ input_multislice = multem.Input()
 system_conf = multem.SystemConfiguration()
 
 system_conf.precision = "float"
-system_conf.device = "host"
+system_conf.device = "device"
 
 # Set simulation experiment
 input_multislice.simulation_type = "HRTEM"
 
 # Electron-Specimen interaction model
 input_multislice.interaction_model = "Multislice"
+input_multislice.potential_type = "Lobato_0_12"
 
 # Potential slicing
 input_multislice.potential_slicing = "Planes"
@@ -44,6 +45,10 @@ rms3d = 0.085
     input_multislice.spec_dz,
 ) = cu001_crystal(na, nb, nc, ncu, rms3d)
 
+
+# Set the amorphous layers
+input_multislice.spec_amorp = [(0, 0, 2.0)]
+
 # Specimen thickness
 input_multislice.thick_type = "Through_Thick"
 input_multislice.thick = numpy.arange(c, 1000, c)
@@ -65,8 +70,9 @@ input_multislice.temporal_spatial_incoh = "Temporal_Spatial"
 # Condenser lens
 # source spread function
 ssf_sigma = multem.mrad_to_sigma(input_multislice.E_0, 0.02)
-input_multislice.cond_lens_ssf_sigma = ssf_sigma
-input_multislice.cond_lens_ssf_npoints = 4
+# These lines are commented due to there being a bug in the matlab code
+# input_multislice.cond_lens_ssf_sigma = ssf_sigma
+# input_multislice.cond_lens_ssf_npoints = 4
 
 # Objective lens
 input_multislice.obj_lens_m = 0
@@ -84,6 +90,9 @@ input_multislice.obj_lens_outer_aper_ang = 0.0
 dsf_sigma = multem.iehwgd_to_sigma(32)
 input_multislice.obj_lens_dsf_sigma = dsf_sigma
 input_multislice.obj_lens_dsf_npoints = 5
+print(ssf_sigma, dsf_sigma)
+print(input_multislice.cond_lens_ssf_sigma)
+print(input_multislice.cond_lens_ssf_npoints)
 
 # zero defocus reference
 input_multislice.obj_lens_zero_defocus_type = "First"
@@ -92,16 +101,6 @@ input_multislice.obj_lens_zero_defocus_plane = 0
 # Do the simulation
 output_multislice = multem.simulate(system_conf, input_multislice)
 
-data = {
-    "dx": output_multislice.dx,
-    "dy": output_multislice.dy,
-    "x": numpy.array(output_multislice.x, dtype=numpy.float64),
-    "y": numpy.array(output_multislice.y, dtype=numpy.float64),
-    "thick": numpy.array(output_multislice.thick, dtype=numpy.float64),
-    "data": [
-        {"m2psi_tot": numpy.array(d.m2psi_tot, numpy.float64)}
-        for d in output_multislice.data
-    ],
-}
+data = {"input": input_multislice.asdict(), "output": output_multislice.asdict()}
 
-pickle.dump(data, open("simulated_HRTEM.p", "wb"))
+pickle.dump(data, open("simulated_HRTEM.p", "wb"), protocol=2)

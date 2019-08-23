@@ -625,16 +625,13 @@ namespace multem {
       }
 
       // XY sampling
-      auto nx = input.nx;
-      auto ny = input.ny;
-      bool bwl = input.bwl;
       input_multislice.grid_2d.set_input_data(
-          nx, 
-          ny, 
+          input.nx, 
+          input.ny, 
           input.spec_lx, 
           input.spec_ly, 
           input.spec_dz, 
-          bwl, 
+          input.bwl, 
           pbc_xy);
 
       // Incident wave

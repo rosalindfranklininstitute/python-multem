@@ -353,7 +353,7 @@ namespace multem {
         potential_slicing("Planes"),
         nx(256),
         ny(256),
-        bwl(0),
+        bwl(false),
         simulation_type("EWRS"),
         iw_type("Auto"),
         iw_psi(0),

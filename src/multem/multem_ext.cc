@@ -174,43 +174,332 @@ namespace pybind11 { namespace detail {
   };
 
   /**
+   * Get the py::buffer_info from a std::vector
+   * @param self A std::vector
+   * @returns A py::buffer_info object
+   */
+  template <typename T>
+  py::buffer_info as_buffer_info(std::vector<T> &self) {
+    return py::buffer_info(
+      self.data(),
+      sizeof(T),
+      py::format_descriptor<T>::format(),
+      1,
+      { self.size() },
+      { sizeof(T) });
+  }
+  
+  /**
+   * Get the py::buffer_info from a multem::Image
+   * @param self A multem::Image
+   * @returns A py::buffer_info object
+   */
+  template <typename T>
+  py::buffer_info as_buffer_info(multem::Image<T> &self) {
+    typedef typename multem::Image<T>::value_type value_type;
+    return py::buffer_info(
+        self.data.data(), 
+        sizeof(value_type), 
+        py::format_descriptor<value_type>::format(),
+        2,
+        { 
+          self.shape[0], 
+          self.shape[1] 
+        },
+        { 
+          sizeof(value_type) * self.shape[1],
+          sizeof(value_type) 
+        });
+  }
+
+
+  /**
+   * Get the py::array_t from a std::vector
+   * @param self A std::vector
+   * @returns A py::array_t object
+   */
+  template <typename T>
+  py::array_t<T> as_array_t(std::vector<T> &self) {
+    return py::array_t<T>(as_buffer_info(self));
+  }
+
+  /**
+   * Get the py::array_t from a multem::Image
+   * @param self A multem::Image
+   * @returns A py::array_t object
+   */
+  template <typename T>
+  py::array_t<T> as_array_t(multem::Image<T> &self) {
+    return py::array_t<T>(as_buffer_info(self));
+  }
+
+  /**
+   * Define helper functions for a type
+   */
+  template <typename T>
+  struct Helpers {};
+
+  /**
+   * Define helper functions for the multem::Input class
+   */
+  template <>
+  struct Helpers <multem::Input> {
+
+    /**
+     * Convert the object to a python dictionary
+     * @param self The object
+     * @returns A python dictionary
+     */
+    static py::dict asdict(multem::Input &self) {
+      py::dict result;
+      result["interaction_model"] = self.interaction_model; 
+      result["potential_type"] = self.potential_type;  
+      result["operation_mode"] = self.operation_mode;
+      result["memory_size"] = self.memory_size;
+      result["reverse_multislice"] = self.reverse_multislice;
+      result["pn_model"] = self.pn_model;
+      result["pn_coh_contrib"] = self.pn_coh_contrib;
+      result["pn_single_conf"] = self.pn_single_conf;
+      result["pn_nconf"] = self.pn_nconf;
+      result["pn_dim"] = self.pn_dim;
+      result["pn_seed"] = self.pn_seed;
+      
+      py::list spec_atoms;
+      for (auto item : self.spec_atoms) {
+        spec_atoms.append(item);
+      }
+      result["spec_atoms"] = spec_atoms;
+      
+      result["spec_dz"] = self.spec_dz;
+      result["spec_lx"] = self.spec_lx;
+      result["spec_ly"] = self.spec_ly;
+      result["spec_lz"] = self.spec_lz;
+      result["spec_cryst_na"] = self.spec_cryst_na;
+      result["spec_cryst_nb"] = self.spec_cryst_nb;
+      result["spec_cryst_nc"] = self.spec_cryst_nc;
+      result["spec_cryst_a"] = self.spec_cryst_a;
+      result["spec_cryst_b"] = self.spec_cryst_b;
+      result["spec_cryst_c"] = self.spec_cryst_c;
+      result["spec_cryst_x0"] = self.spec_cryst_x0;
+      result["spec_cryst_y0"] = self.spec_cryst_y0;
+
+      py::list spec_amorp;
+      for (auto item : self.spec_amorp) {
+        spec_amorp.append(item);
+      }
+      result["spec_amorp"] = spec_amorp;
+      
+      result["spec_rot_theta"] = self.spec_rot_theta;
+      result["spec_rot_u0"] = self.spec_rot_u0;
+      result["spec_rot_center_type"] = self.spec_rot_center_type;
+      result["spec_rot_center_p"] = self.spec_rot_center_p;
+      result["thick_type"] = self.thick_type;
+      result["thick"] = py::detail::as_array_t(self.thick);
+      result["potential_slicing"] = self.potential_slicing;
+      result["nx"] = self.nx;
+      result["ny"] = self.ny;
+      result["bwl"] = self.bwl;
+      result["simulation_type"] = self.simulation_type;
+      result["iw_type"] = self.iw_type;
+      result["iw_psi"] = py::detail::as_array_t(self.iw_psi);
+      result["iw_x"] = py::detail::as_array_t(self.iw_x);
+      result["iw_y"] = py::detail::as_array_t(self.iw_y);
+      result["E_0"] = self.E_0;
+      result["theta"] = self.theta;
+      result["phi"] = self.phi;
+      result["illumination_model"] = self.illumination_model;
+      result["temporal_spatial_incoh"] = self.temporal_spatial_incoh;
+      result["cond_lens_m"] = self.cond_lens_m;
+      result["cond_lens_c_10"] = self.cond_lens_c_10;
+      result["cond_lens_c_12"] = self.cond_lens_c_12;
+      result["cond_lens_phi_12"] = self.cond_lens_phi_12;
+      result["cond_lens_c_21"] = self.cond_lens_c_21;
+      result["cond_lens_phi_21"] = self.cond_lens_phi_21;
+      result["cond_lens_c_23"] = self.cond_lens_c_23;
+      result["cond_lens_phi_23"] = self.cond_lens_phi_23;
+      result["cond_lens_c_30"] = self.cond_lens_c_30;
+      result["cond_lens_c_32"] = self.cond_lens_c_32;
+      result["cond_lens_phi_32"] = self.cond_lens_phi_32;
+      result["cond_lens_c_34"] = self.cond_lens_c_34;
+      result["cond_lens_phi_34"] = self.cond_lens_phi_34;
+      result["cond_lens_c_41"] = self.cond_lens_c_41;
+      result["cond_lens_phi_41"] = self.cond_lens_phi_41;
+      result["cond_lens_c_43"] = self.cond_lens_c_43;
+      result["cond_lens_phi_43"] = self.cond_lens_phi_43;
+      result["cond_lens_c_45"] = self.cond_lens_c_45;
+      result["cond_lens_phi_45"] = self.cond_lens_phi_45;
+      result["cond_lens_c_50"] = self.cond_lens_c_50;
+      result["cond_lens_c_52"] = self.cond_lens_c_52;
+      result["cond_lens_phi_52"] = self.cond_lens_phi_52;
+      result["cond_lens_c_54"] = self.cond_lens_c_54;
+      result["cond_lens_phi_54"] = self.cond_lens_phi_54;
+      result["cond_lens_c_56"] = self.cond_lens_c_56;
+      result["cond_lens_phi_56"] = self.cond_lens_phi_56;
+      result["cond_lens_inner_aper_ang"] = self.cond_lens_inner_aper_ang;
+      result["cond_lens_outer_aper_ang"] = self.cond_lens_outer_aper_ang;
+      result["cond_lens_ssf_sigma"] = self.cond_lens_ssf_sigma;
+      result["cond_lens_ssf_npoints"] = self.cond_lens_ssf_npoints;
+      result["cond_lens_dsf_sigma"] = self.cond_lens_dsf_sigma;
+      result["cond_lens_dsf_npoints"] = self.cond_lens_dsf_npoints;
+      result["cond_lens_zero_defocus_type"] = self.cond_lens_zero_defocus_type;
+      result["cond_lens_zero_defocus_plane"] = self.cond_lens_zero_defocus_plane;
+      result["obj_lens_m"] = self.obj_lens_m;
+      result["obj_lens_c_10"] = self.obj_lens_c_10;
+      result["obj_lens_c_12"] = self.obj_lens_c_12;
+      result["obj_lens_phi_12"] = self.obj_lens_phi_12;
+      result["obj_lens_c_21"] = self.obj_lens_c_21;
+      result["obj_lens_phi_21"] = self.obj_lens_phi_21;
+      result["obj_lens_c_23"] = self.obj_lens_c_23;
+      result["obj_lens_phi_23"] = self.obj_lens_phi_23;
+      result["obj_lens_c_30"] = self.obj_lens_c_30;
+      result["obj_lens_c_32"] = self.obj_lens_c_32;
+      result["obj_lens_phi_32"] = self.obj_lens_phi_32;
+      result["obj_lens_c_34"] = self.obj_lens_c_34;
+      result["obj_lens_phi_34"] = self.obj_lens_phi_34;
+      result["obj_lens_c_41"] = self.obj_lens_c_41;
+      result["obj_lens_phi_41"] = self.obj_lens_phi_41;
+      result["obj_lens_c_43"] = self.obj_lens_c_43;
+      result["obj_lens_phi_43"] = self.obj_lens_phi_43;
+      result["obj_lens_c_45"] = self.obj_lens_c_45;
+      result["obj_lens_phi_45"] = self.obj_lens_phi_45;
+      result["obj_lens_c_50"] = self.obj_lens_c_50;
+      result["obj_lens_c_52"] = self.obj_lens_c_52;
+      result["obj_lens_phi_52"] = self.obj_lens_phi_52;
+      result["obj_lens_c_54"] = self.obj_lens_c_54;
+      result["obj_lens_phi_54"] = self.obj_lens_phi_54;
+      result["obj_lens_c_56"] = self.obj_lens_c_56;
+      result["obj_lens_phi_56"] = self.obj_lens_phi_56;
+      result["obj_lens_inner_aper_ang"] = self.obj_lens_inner_aper_ang;
+      result["obj_lens_outer_aper_ang"] = self.obj_lens_outer_aper_ang;
+      result["obj_lens_dsf_sigma"] = self.obj_lens_dsf_sigma;
+      result["obj_lens_dsf_npoints"] = self.obj_lens_dsf_npoints;
+      result["obj_lens_zero_defocus_type"] = self.obj_lens_zero_defocus_type;
+      result["obj_lens_zero_defocus_plane"] = self.obj_lens_zero_defocus_plane;
+      //STEMDetector detector;
+      result["scanning_type"] = self.scanning_type;
+      result["scanning_periodic"] = self.scanning_periodic;
+      result["scanning_ns"] = self.scanning_ns;
+      result["scanning_x0"] = self.scanning_x0;
+      result["scanning_y0"] = self.scanning_y0;
+      result["scanning_xe"] = self.scanning_xe;
+      result["scanning_ye"] = self.scanning_ye;
+      result["ped_nrot"] = self.ped_nrot;
+      result["ped_theta"] = self.ped_theta;
+      result["hci_nrot"] = self.hci_nrot;
+      result["hci_theta"] = self.hci_theta;
+      result["eels_Z"] = self.eels_Z;
+      result["eels_E_loss"] = self.eels_E_loss;
+      result["eels_collection_angle"] = self.eels_collection_angle;
+      result["eels_m_selection"] = self.eels_m_selection;
+      result["eels_channelling_type"] = self.eels_channelling_type;
+      result["eftem_Z"] = self.eftem_Z;
+      result["eftem_E_loss"] = self.eftem_E_loss;
+      result["eftem_collection_angle"] = self.eftem_collection_angle;
+      result["eftem_m_selection"] = self.eftem_m_selection;
+      result["eftem_channelling_type"] = self.eftem_channelling_type;
+      result["output_area_ix_0"] = self.output_area_ix_0;
+      result["output_area_iy_0"] = self.output_area_iy_0;
+      result["output_area_ix_e"] = self.output_area_ix_e;
+      result["output_area_iy_e"] = self.output_area_iy_e;
+      return result;
+    }
+  };
+
+  /**
+   * Define helper functions for the multem::Image class
+   */
+  template<typename T>
+  struct Helpers < multem::Image<T> > {
+
+    /**
+     * Create a multem::Image from a py::array_t
+     * @param array The py::array_t object
+     * @returns The multem::Image object
+     */
+    static multem::Image<T> init_from_array_t(py::array_t<T> array) {
+      py::buffer_info buffer = array.request();
+      if (buffer.ndim != 2) {
+        throw std::runtime_error("Number of dimensions must be two");
+      }
+      if (buffer.shape[0] < 0 || buffer.shape[1] < 0) {
+        throw std::runtime_error("Size must be greater than 0");
+      }
+      return multem::Image<T>(
+        (T *) buffer.ptr, 
+        typename multem::Image<T>::shape_type({
+          (std::size_t) buffer.shape[0], 
+          (std::size_t) buffer.shape[1]}));
+    }
+
+    /**
+     * Create a py::buffer_info object from a multem::Image object
+     * @param self The multem::Image object
+     * @returns The py::buffer_info object
+     */
+    static py::buffer_info as_buffer_info(multem::Image<T> &self) {
+      return py::detail::as_buffer_info(self);
+    }
+  };
+
+  /**
+   * Define helper functions for the multem::Data class
+   */
+  template <>
+  struct Helpers <multem::Data> {
+    
+    /**
+     * Convert the object to a python dictionary
+     * @param self The object
+     * @returns A python dictionary
+     */
+    static py::dict asdict(multem::Data &self) {
+      py::dict result;
+      result["m2psi_tot"] = py::detail::as_array_t<double>(self.m2psi_tot);
+      result["m2psi_coh"] = py::detail::as_array_t<double>(self.m2psi_coh);
+      result["psi_coh"] = py::detail::as_array_t< std::complex<double> >(self.psi_coh);
+      return result;
+    }
+  };
+  
+  /**
+   * Define helper functions for the multem::Output class
+   */
+  template <>
+  struct Helpers <multem::Output> {
+    
+    /**
+     * Convert the object to a python dictionary
+     * @param self The object
+     * @returns A python dictionary
+     */
+    static py::dict asdict(multem::Output &self) {
+      py::dict result;
+      result["dx"] = self.dx;
+      result["dy"] = self.dy;
+      result["x"] = py::detail::as_array_t<double>(self.x);
+      result["y"] = py::detail::as_array_t<double>(self.y);
+      result["thick"] = py::detail::as_array_t<double>(self.thick);
+      py::list data;
+      for (auto item : self.data) {
+        data.append(Helpers<multem::Data>::asdict(item));
+      }
+      result["data"] = data;
+      return result;
+    }
+  };
+
+  /**
    * Wrap a multem::Image<T> class as a buffer object
    */
   template <typename T>
   py::class_< multem::Image<T> > image_class(py::module &m, const char *name) {
     return py::class_< multem::Image<T> >(m, name, py::buffer_protocol())
       .def(py::init<>())
-      .def(py::init([](py::array_t<T> array) -> multem::Image<T> {
-        py::buffer_info buffer = array.request();
-        if (buffer.ndim != 2) {
-          throw std::runtime_error("Number of dimensions must be two");
-        }
-        if (buffer.shape[0] < 0 || buffer.shape[1] < 0) {
-          throw std::runtime_error("Size must be greater than 0");
-        }
-        return multem::Image<T>(
-          (T *) buffer.ptr, 
-          typename multem::Image<T>::shape_type({
-            (std::size_t) buffer.shape[0], 
-            (std::size_t) buffer.shape[1]}));
-      }))
-      .def_buffer([](multem::Image<T>& self) -> pybind11::buffer_info { 
-        typedef typename multem::Image<T>::value_type value_type;
-        return py::buffer_info(
-          self.data.data(), 
-          sizeof(value_type), 
-          py::format_descriptor<value_type>::format(),
-          2,
-          { 
-            self.shape[0], 
-            self.shape[1] 
-          },
-          { 
-            sizeof(value_type) * self.shape[1],
-            sizeof(value_type) 
-          });
-      });
+      .def(py::init(&py::detail::Helpers<multem::Image<T>>::init_from_array_t))
+      .def_buffer(&py::detail::Helpers<multem::Image<T>>::as_buffer_info)
+      ;
   }
+
 }}
 
 
@@ -377,6 +666,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("output_area_iy_0", &multem::Input::output_area_iy_0)
     .def_readwrite("output_area_ix_e", &multem::Input::output_area_ix_e)
     .def_readwrite("output_area_iy_e", &multem::Input::output_area_iy_e)
+    .def("asdict", &py::detail::Helpers<multem::Input>::asdict)
     ;
 
   // Wrap the multem::SystemConfiguration class
@@ -413,6 +703,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("y", &multem::Output::y)
     .def_readwrite("thick", &multem::Output::thick)
     .def_readwrite("data", &multem::Output::data)
+    .def("asdict", &py::detail::Helpers<multem::Output>::asdict)
     ;
 
   // Expose the simulation function
