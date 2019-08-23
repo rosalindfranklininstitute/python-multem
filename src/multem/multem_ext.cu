@@ -14,14 +14,15 @@
 #include <stdexcept>
 #include <map>
 #include <string>
-#include <sstream>
 #include <cuda_runtime.h>
-#include <multem/multem_ext.h>
 #include <types.cuh>
 #include <input_multislice.cuh>
 #include <device_functions.cuh>
 #include <crystal_spec.hpp>
-#include <multem.cu>
+#include <input_multislice.cuh>
+#include <output_multislice.hpp>
+#include <multislice.cuh>
+#include <multem/multem_ext.h>
 
 namespace multem {
 

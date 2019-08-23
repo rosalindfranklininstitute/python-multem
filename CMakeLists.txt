@@ -28,8 +28,7 @@ target_compile_features(multem_ext PUBLIC cxx_std_11)
 # Set the include directory
 target_include_directories(multem_ext PUBLIC 
   src
-  MULTEM/src
-  MULTEM/gui_multem)
+  MULTEM/src)
 
 # Link to the CUDA libraries
 target_link_libraries(multem_ext PUBLIC
@@ -42,10 +41,10 @@ set(COVERAGE_COMPILE_FLAGS -coverage)
 set(COVERAGE_LINK_FLAGS    -coverage)
 
 # Set the coverage compile and link flags in the debug build
-#target_compile_options(multem_ext 
-#  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_COMPILE_FLAGS}>")
-#target_link_options(multem_ext 
-#  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_LINK_FLAGS}>")
+target_compile_options(multem_ext 
+  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_COMPILE_FLAGS}>")
+target_link_options(multem_ext 
+  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_LINK_FLAGS}>")
 
 # Install the python extension
 install(TARGETS multem_ext LIBRARY DESTINATION src/multem)
