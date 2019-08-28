@@ -105,3 +105,9 @@ venv.bak/
 
 # Skbuild
 _skbuild/
+
+# FFTW
+*.wisdom
+
+# Clang Format
+.clang-format
