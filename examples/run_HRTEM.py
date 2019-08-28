@@ -27,6 +27,11 @@ input_multislice.pn_nconf = 10
 input_multislice.pn_dim = 110
 input_multislice.pn_seed = 300183
 
+input_multislice.iw_psi = [0]
+input_multislice.iw_x = [0]
+input_multislice.iw_y = [0]
+
+
 # Specimen information
 na = 16
 nb = 16
@@ -90,9 +95,6 @@ input_multislice.obj_lens_outer_aper_ang = 0.0
 dsf_sigma = multem.iehwgd_to_sigma(32)
 input_multislice.obj_lens_dsf_sigma = dsf_sigma
 input_multislice.obj_lens_dsf_npoints = 5
-print(ssf_sigma, dsf_sigma)
-print(input_multislice.cond_lens_ssf_sigma)
-print(input_multislice.cond_lens_ssf_npoints)
 
 # zero defocus reference
 input_multislice.obj_lens_zero_defocus_type = "First"
