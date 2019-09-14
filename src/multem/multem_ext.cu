@@ -586,6 +586,10 @@ namespace multem {
               input.spec_cryst_x0, 
               input.spec_cryst_y0);
           input_multislice.atoms.set_amorphous_parameters(amorp_lay_info);
+          input_multislice.atoms.l_x = input.spec_lx;
+          input_multislice.atoms.l_y = input.spec_ly;
+          input_multislice.atoms.l_z = input.spec_lz;
+          input_multislice.atoms.dz = input.spec_dz;
           input_multislice.atoms.resize(input.spec_atoms.size());
           for(auto i = 0; i < input.spec_atoms.size(); ++i) {
             input_multislice.atoms.Z[i] = input.spec_atoms[i].element;
