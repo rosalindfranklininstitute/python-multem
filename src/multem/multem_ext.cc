@@ -240,10 +240,363 @@ namespace pybind11 { namespace detail {
   struct Helpers {};
 
   /**
+   * Define helper function for the multem::SystemConfiguration class
+   */
+  template <>
+  struct Helpers <multem::SystemConfiguration> {
+   
+    /**
+     * Get the state
+     */
+    static py::tuple getstate(const multem::SystemConfiguration &self) {
+      return py::make_tuple(
+        self.device,
+        self.precision,
+        self.cpu_ncores,
+        self.cpu_nthread,
+        self.gpu_device,
+        self.gpu_nstream);
+    }
+
+    /**
+     * Set the state
+     */
+    static multem::SystemConfiguration setstate(py::tuple obj) {
+      multem::SystemConfiguration self;
+      self.device = obj[0].cast<std::string>();
+      self.precision = obj[1].cast<std::string>();
+      self.cpu_ncores = obj[2].cast<std::size_t>();
+      self.cpu_nthread = obj[3].cast<std::size_t>();
+      self.gpu_device = obj[4].cast<std::size_t>();
+      self.gpu_nstream = obj[5].cast<std::size_t>();
+      return self;
+    }
+  };
+  
+  /**
+   * Define helper function for the multem::STEMDetector class
+   */
+  template <>
+  struct Helpers <multem::STEMDetector> {
+   
+    /**
+     * Get the state
+     */
+    static py::tuple getstate(const multem::STEMDetector &self) {
+      return py::make_tuple(
+        self.type,
+        self.cir,
+        self.radial,
+        self.matrix);
+    }
+
+    /**
+     * Set the state
+     */
+    static multem::STEMDetector setstate(py::tuple obj) {
+      multem::STEMDetector self;
+      self.type = obj[0].cast<std::string>();
+      self.cir = obj[1].cast< std::vector<multem::STEMDetector::Angles> >();
+      self.radial = obj[2].cast< std::vector<multem::STEMDetector::Radial> >();
+      self.matrix = obj[3].cast< std::vector<multem::STEMDetector::Matrix> >();
+      return self;
+    }
+  };
+
+  /**
    * Define helper functions for the multem::Input class
    */
   template <>
   struct Helpers <multem::Input> {
+    
+    /**
+     * Get the state
+     */
+    static py::tuple getstate(const multem::Input &self) {
+      return py::make_tuple(
+        self.interaction_model, 
+        self.potential_type,  
+        self.operation_mode,
+        self.memory_size,
+        self.reverse_multislice,
+        self.pn_model,
+        self.pn_coh_contrib,
+        self.pn_single_conf,
+        self.pn_nconf,
+        self.pn_dim,
+        self.pn_seed,
+        self.spec_atoms,
+        self.spec_dz,
+        self.spec_lx,
+        self.spec_ly,
+        self.spec_lz,
+        self.spec_cryst_na,
+        self.spec_cryst_nb,
+        self.spec_cryst_nc,
+        self.spec_cryst_a,
+        self.spec_cryst_b,
+        self.spec_cryst_c,
+        self.spec_cryst_x0,
+        self.spec_cryst_y0,
+        self.spec_amorp,
+        self.spec_rot_theta,
+        self.spec_rot_u0,
+        self.spec_rot_center_type,
+        self.spec_rot_center_p,
+        self.thick_type,
+        self.thick,
+        self.potential_slicing,
+        self.nx,
+        self.ny,
+        self.bwl,
+        self.simulation_type,
+        self.iw_type,
+        self.iw_psi,
+        self.iw_x,
+        self.iw_y,
+        self.E_0,
+        self.theta,
+        self.phi,
+        self.illumination_model,
+        self.temporal_spatial_incoh,
+        self.cond_lens_m,
+        self.cond_lens_c_10,
+        self.cond_lens_c_12,
+        self.cond_lens_phi_12,
+        self.cond_lens_c_21,
+        self.cond_lens_phi_21,
+        self.cond_lens_c_23,
+        self.cond_lens_phi_23,
+        self.cond_lens_c_30,
+        self.cond_lens_c_32,
+        self.cond_lens_phi_32,
+        self.cond_lens_c_34,
+        self.cond_lens_phi_34,
+        self.cond_lens_c_41,
+        self.cond_lens_phi_41,
+        self.cond_lens_c_43,
+        self.cond_lens_phi_43,
+        self.cond_lens_c_45,
+        self.cond_lens_phi_45,
+        self.cond_lens_c_50,
+        self.cond_lens_c_52,
+        self.cond_lens_phi_52,
+        self.cond_lens_c_54,
+        self.cond_lens_phi_54,
+        self.cond_lens_c_56,
+        self.cond_lens_phi_56,
+        self.cond_lens_inner_aper_ang,
+        self.cond_lens_outer_aper_ang,
+        self.cond_lens_ssf_sigma,
+        self.cond_lens_ssf_npoints,
+        self.cond_lens_dsf_sigma,
+        self.cond_lens_dsf_npoints,
+        self.cond_lens_zero_defocus_type,
+        self.cond_lens_zero_defocus_plane,
+        self.obj_lens_m,
+        self.obj_lens_c_10,
+        self.obj_lens_c_12,
+        self.obj_lens_phi_12,
+        self.obj_lens_c_21,
+        self.obj_lens_phi_21,
+        self.obj_lens_c_23,
+        self.obj_lens_phi_23,
+        self.obj_lens_c_30,
+        self.obj_lens_c_32,
+        self.obj_lens_phi_32,
+        self.obj_lens_c_34,
+        self.obj_lens_phi_34,
+        self.obj_lens_c_41,
+        self.obj_lens_phi_41,
+        self.obj_lens_c_43,
+        self.obj_lens_phi_43,
+        self.obj_lens_c_45,
+        self.obj_lens_phi_45,
+        self.obj_lens_c_50,
+        self.obj_lens_c_52,
+        self.obj_lens_phi_52,
+        self.obj_lens_c_54,
+        self.obj_lens_phi_54,
+        self.obj_lens_c_56,
+        self.obj_lens_phi_56,
+        self.obj_lens_inner_aper_ang,
+        self.obj_lens_outer_aper_ang,
+        self.obj_lens_dsf_sigma,
+        self.obj_lens_dsf_npoints,
+        self.obj_lens_zero_defocus_type,
+        self.obj_lens_zero_defocus_plane,
+        self.detector,
+        self.scanning_type,
+        self.scanning_periodic,
+        self.scanning_ns,
+        self.scanning_x0,
+        self.scanning_y0,
+        self.scanning_xe,
+        self.scanning_ye,
+        self.ped_nrot,
+        self.ped_theta,
+        self.hci_nrot,
+        self.hci_theta,
+        self.eels_Z,
+        self.eels_E_loss,
+        self.eels_collection_angle,
+        self.eels_m_selection,
+        self.eels_channelling_type,
+        self.eftem_Z,
+        self.eftem_E_loss,
+        self.eftem_collection_angle,
+        self.eftem_m_selection,
+        self.eftem_channelling_type,
+        self.output_area_ix_0,
+        self.output_area_iy_0,
+        self.output_area_ix_e,
+        self.output_area_iy_e);
+    }
+
+    /**
+     * Set the state
+     */
+    static multem::Input setstate(py::tuple obj) {
+      multem::Input self;
+      self.interaction_model = obj[0].cast< std::string >(); 
+      self.potential_type = obj[1].cast< std::string >();  
+      self.operation_mode = obj[2].cast< std::string >();
+      self.memory_size = obj[3].cast< std::size_t >();
+      self.reverse_multislice = obj[4].cast< bool >();
+      self.pn_model = obj[5].cast< std::string >();
+      self.pn_coh_contrib = obj[6].cast< bool >();
+      self.pn_single_conf = obj[7].cast< bool >();
+      self.pn_nconf = obj[8].cast< int >();
+      self.pn_dim = obj[9].cast< int >();
+      self.pn_seed = obj[10].cast< int >();
+      self.spec_atoms = obj[11].cast< std::vector<multem::Atom> >();
+      self.spec_dz = obj[12].cast< double >();
+      self.spec_lx = obj[13].cast< double >();
+      self.spec_ly = obj[14].cast< double >();
+      self.spec_lz = obj[15].cast< double >();
+      self.spec_cryst_na = obj[16].cast< int >();
+      self.spec_cryst_nb = obj[17].cast< int >();
+      self.spec_cryst_nc = obj[18].cast< int >();
+      self.spec_cryst_a = obj[19].cast< double >();
+      self.spec_cryst_b = obj[20].cast< double >();
+      self.spec_cryst_c = obj[21].cast< double >();
+      self.spec_cryst_x0 = obj[22].cast< double >();
+      self.spec_cryst_y0 = obj[23].cast< double >();
+      self.spec_amorp = obj[24].cast< std::vector<multem::AmorphousLayer> >();
+      self.spec_rot_theta = obj[25].cast< double >();
+      self.spec_rot_u0 = obj[26].cast< std::array<double, 3> >();
+      self.spec_rot_center_type = obj[27].cast< std::string >();
+      self.spec_rot_center_p = obj[28].cast< std::array<double, 3> >();
+      self.thick_type = obj[29].cast< std::string >();
+      self.thick = obj[30].cast< std::vector<double> >();
+      self.potential_slicing = obj[31].cast< std::string >();
+      self.nx = obj[32].cast< int >();
+      self.ny = obj[33].cast< int >();
+      self.bwl = obj[34].cast< bool >();
+      self.simulation_type = obj[35].cast< std::string >();
+      self.iw_type = obj[36].cast< std::string >();
+      self.iw_psi = obj[37].cast< std::vector< std::complex<double> > >();
+      self.iw_x = obj[38].cast< std::vector<double> >();
+      self.iw_y = obj[39].cast< std::vector<double> >();
+      self.E_0 = obj[40].cast< double >();
+      self.theta = obj[41].cast< double >();
+      self.phi = obj[42].cast< double >();
+      self.illumination_model = obj[43].cast< std::string >();
+      self.temporal_spatial_incoh = obj[44].cast< std::string >();
+      self.cond_lens_m = obj[45].cast< int >();
+      self.cond_lens_c_10 = obj[46].cast< double >();
+      self.cond_lens_c_12 = obj[47].cast< double >();
+      self.cond_lens_phi_12 = obj[48].cast< double >();
+      self.cond_lens_c_21 = obj[49].cast< double >();
+      self.cond_lens_phi_21 = obj[50].cast< double >();
+      self.cond_lens_c_23 = obj[51].cast< double >();
+      self.cond_lens_phi_23 = obj[52].cast< double >();
+      self.cond_lens_c_30 = obj[53].cast< double >();
+      self.cond_lens_c_32 = obj[54].cast< double >();
+      self.cond_lens_phi_32 = obj[55].cast< double >();
+      self.cond_lens_c_34 = obj[56].cast< double >();
+      self.cond_lens_phi_34 = obj[57].cast< double >();
+      self.cond_lens_c_41 = obj[58].cast< double >();
+      self.cond_lens_phi_41 = obj[59].cast< double >();
+      self.cond_lens_c_43 = obj[60].cast< double >();
+      self.cond_lens_phi_43 = obj[61].cast< double >();
+      self.cond_lens_c_45 = obj[62].cast< double >();
+      self.cond_lens_phi_45 = obj[63].cast< double >();
+      self.cond_lens_c_50 = obj[64].cast< double >();
+      self.cond_lens_c_52 = obj[65].cast< double >();
+      self.cond_lens_phi_52 = obj[66].cast< double >();
+      self.cond_lens_c_54 = obj[67].cast< double >();
+      self.cond_lens_phi_54 = obj[68].cast< double >();
+      self.cond_lens_c_56 = obj[69].cast< double >();
+      self.cond_lens_phi_56 = obj[70].cast< double >();
+      self.cond_lens_inner_aper_ang = obj[71].cast< double >();
+      self.cond_lens_outer_aper_ang = obj[72].cast< double >();
+      self.cond_lens_ssf_sigma = obj[73].cast< double >();
+      self.cond_lens_ssf_npoints = obj[74].cast< int >();
+      self.cond_lens_dsf_sigma = obj[75].cast< double >();
+      self.cond_lens_dsf_npoints = obj[76].cast< int >();
+      self.cond_lens_zero_defocus_type = obj[77].cast< std::string >();
+      self.cond_lens_zero_defocus_plane = obj[78].cast< double >();
+      self.obj_lens_m = obj[79].cast< int >();
+      self.obj_lens_c_10 = obj[80].cast< double >();
+      self.obj_lens_c_12 = obj[81].cast< double >();
+      self.obj_lens_phi_12 = obj[82].cast< double >();
+      self.obj_lens_c_21 = obj[83].cast< double >();
+      self.obj_lens_phi_21 = obj[84].cast< double >();
+      self.obj_lens_c_23 = obj[85].cast< double >();
+      self.obj_lens_phi_23 = obj[86].cast< double >();
+      self.obj_lens_c_30 = obj[87].cast< double >();
+      self.obj_lens_c_32 = obj[88].cast< double >();
+      self.obj_lens_phi_32 = obj[89].cast< double >();
+      self.obj_lens_c_34 = obj[90].cast< double >();
+      self.obj_lens_phi_34 = obj[91].cast< double >();
+      self.obj_lens_c_41 = obj[92].cast< double >();
+      self.obj_lens_phi_41 = obj[93].cast< double >();
+      self.obj_lens_c_43 = obj[94].cast< double >();
+      self.obj_lens_phi_43 = obj[95].cast< double >();
+      self.obj_lens_c_45 = obj[96].cast< double >();
+      self.obj_lens_phi_45 = obj[97].cast< double >();
+      self.obj_lens_c_50 = obj[98].cast< double >();
+      self.obj_lens_c_52 = obj[99].cast< double >();
+      self.obj_lens_phi_52 = obj[100].cast< double >();
+      self.obj_lens_c_54 = obj[101].cast< double >();
+      self.obj_lens_phi_54 = obj[102].cast< double >();
+      self.obj_lens_c_56 = obj[103].cast< double >();
+      self.obj_lens_phi_56 = obj[104].cast< double >();
+      self.obj_lens_inner_aper_ang = obj[105].cast< double >();
+      self.obj_lens_outer_aper_ang = obj[106].cast< double >();
+      self.obj_lens_dsf_sigma = obj[107].cast< double >();
+      self.obj_lens_dsf_npoints = obj[108].cast< int >();
+      self.obj_lens_zero_defocus_type = obj[109].cast< std::string >();
+      self.obj_lens_zero_defocus_plane = obj[110].cast< double >();
+      self.detector = obj[111].cast< multem::STEMDetector >();
+      self.scanning_type = obj[112].cast< std::string >();
+      self.scanning_periodic = obj[113].cast< bool >();
+      self.scanning_ns = obj[114].cast< int >();
+      self.scanning_x0 = obj[115].cast< double >();
+      self.scanning_y0 = obj[116].cast< double >();
+      self.scanning_xe = obj[117].cast< double >();
+      self.scanning_ye = obj[118].cast< double >();
+      self.ped_nrot = obj[119].cast< double >();
+      self.ped_theta = obj[120].cast< double >();
+      self.hci_nrot = obj[121].cast< double >();
+      self.hci_theta = obj[122].cast< double >();
+      self.eels_Z = obj[123].cast< int >();
+      self.eels_E_loss = obj[124].cast< double >();
+      self.eels_collection_angle = obj[125].cast< double >();
+      self.eels_m_selection = obj[126].cast< int >();
+      self.eels_channelling_type = obj[127].cast< std::string >();
+      self.eftem_Z = obj[128].cast< int >();
+      self.eftem_E_loss = obj[129].cast< double >();
+      self.eftem_collection_angle = obj[130].cast< double >();
+      self.eftem_m_selection = obj[131].cast< int >();
+      self.eftem_channelling_type = obj[132].cast< std::string >();
+      self.output_area_ix_0 = obj[133].cast< int >();
+      self.output_area_iy_0 = obj[134].cast< int >();
+      self.output_area_ix_e = obj[135].cast< int >();
+      self.output_area_iy_e = obj[136].cast< int >();
+      return self;
+    }
 
     /**
      * Convert the object to a python dictionary
@@ -524,6 +877,9 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("cir", &multem::STEMDetector::cir)
     .def_readwrite("radial", &multem::STEMDetector::radial)
     .def_readwrite("matrix", &multem::STEMDetector::matrix)
+    .def(py::pickle(
+        &py::detail::Helpers<multem::STEMDetector>::getstate,
+        &py::detail::Helpers<multem::STEMDetector>::setstate))
     ;
 
   // Wrap the multem::Input class
@@ -667,6 +1023,9 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("output_area_ix_e", &multem::Input::output_area_ix_e)
     .def_readwrite("output_area_iy_e", &multem::Input::output_area_iy_e)
     .def("asdict", &py::detail::Helpers<multem::Input>::asdict)
+    .def(py::pickle(
+        &py::detail::Helpers<multem::Input>::getstate,
+        &py::detail::Helpers<multem::Input>::setstate))
     ;
 
   // Wrap the multem::SystemConfiguration class
@@ -678,6 +1037,9 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("cpu_nthread", &multem::SystemConfiguration::cpu_nthread)
     .def_readwrite("gpu_device", &multem::SystemConfiguration::gpu_device)
     .def_readwrite("gpu_nstream", &multem::SystemConfiguration::gpu_nstream)
+    .def(py::pickle(
+        &py::detail::Helpers<multem::SystemConfiguration>::getstate,
+        &py::detail::Helpers<multem::SystemConfiguration>::setstate))
     ;
 
   // Wrap a double and complex image class
