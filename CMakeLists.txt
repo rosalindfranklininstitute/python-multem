@@ -17,6 +17,11 @@ add_subdirectory(pybind11)
 set(HAS_FLTO False)
 set(HAS_FLTO_THIN False)
 
+# Add the automatically determined parts of the RPATH which point to directories
+# outside the build tree to the install RPATH. Required for submission to
+# clusters which may not allow export of LD_LIBRARY_PATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
+
 # Add a C/C++ extension
 pybind11_add_module(multem_ext 
   src/multem/multem_ext.cu
