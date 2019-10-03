@@ -1069,7 +1069,12 @@ PYBIND11_MODULE(multem_ext, m)
     ;
 
   // Expose the simulation function
-  m.def("simulate", &multem::simulate);
+  //
+  // Since this function takes a long time to run and pybind by default holds
+  // the python GIL for all C++ functions, we should release the GIL in order
+  // to avoid instability in software using python threads. This was observed to
+  // be an issue with dask parallism on the cluster
+  m.def("simulate", &multem::simulate, py::call_guard<py::gil_scoped_release>());
 
   // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);
