@@ -1,7 +1,7 @@
 #
 # Copyright (C) 2019 James Parkhurst
 #
-# This code is distributed under the BSD license.
+# This code is distributed under the GPLv3 license.
 #
 from skbuild import setup
 from setuptools import Command
