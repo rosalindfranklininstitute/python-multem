@@ -876,11 +876,11 @@ namespace multem {
           for (auto j = 0; j < output_multislice.ndetector; ++j) {
             result.data[i].image_tot[j] = Image<double>(
                 output_multislice.image_tot[i].image[j].data(), 
-                  Image<double>::shape_type({ ny, nx }));
+                  Image<double>::shape_type({ nx, ny }));
             if (output_multislice.pn_coh_contrib) {
               result.data[i].image_coh[j] = Image<double>(
                   output_multislice.image_coh[i].image[j].data(), 
-                    Image<double>::shape_type({ ny, nx }));
+                    Image<double>::shape_type({ nx, ny }));
             }
           }
         }
@@ -890,28 +890,28 @@ namespace multem {
             result.data[i].m2psi_tot = Image<double>(
                 output_multislice.m2psi_tot[i].data(), 
                   Image<double>::shape_type({
-                    (std::size_t) output_multislice.ny,
-                    (std::size_t) output_multislice.nx}));
+                    (std::size_t) output_multislice.nx,
+                    (std::size_t) output_multislice.ny}));
           }
           result.data[i].psi_coh = Image< std::complex<double> >(
               output_multislice.psi_coh[i].data(), 
               Image< std::complex<double> >::shape_type({
-                (std::size_t) output_multislice.ny,
-                (std::size_t) output_multislice.nx}));
+                (std::size_t) output_multislice.nx,
+                (std::size_t) output_multislice.ny}));
         }
       } else {
         for (auto i = 0; i < output_multislice.thick.size(); ++i) {
           result.data[i].m2psi_tot = Image<double>(
               output_multislice.m2psi_tot[i].data(), 
                 Image<double>::shape_type({
-                  (std::size_t) output_multislice.ny,
-                  (std::size_t) output_multislice.nx}));
+                  (std::size_t) output_multislice.nx,
+                  (std::size_t) output_multislice.ny}));
           if (output_multislice.pn_coh_contrib) {
             result.data[i].m2psi_coh = Image<double>(
                 output_multislice.m2psi_coh[i].data(), 
                 Image<double>::shape_type({
-                  (std::size_t) output_multislice.ny,
-                  (std::size_t) output_multislice.nx}));
+                  (std::size_t) output_multislice.nx,
+                  (std::size_t) output_multislice.ny}));
           }
         }
       }
