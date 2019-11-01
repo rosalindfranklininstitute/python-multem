@@ -3,6 +3,8 @@ import numpy
 import pickle
 from cu001_crystal import cu001_crystal
 
+print("GPU available: %s" % multem.is_gpu_available())
+
 input_multislice = multem.Input()
 system_conf = multem.SystemConfiguration()
 
