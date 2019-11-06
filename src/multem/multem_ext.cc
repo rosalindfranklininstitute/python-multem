@@ -18,6 +18,105 @@
 namespace py = pybind11;
 
 namespace pybind11 { namespace detail {
+
+  /**
+   * An iterator wrapper that extracts the pybind iterator into the desired 
+   * C++ type. Importantly, the GIL is acquired whenever python code is called.
+   */
+  template <typename ValueType, typename Iterator>
+  class SliceIterator {
+  public:
+
+    using value_type = ValueType;
+    using reference = const ValueType&;
+    using pointer = const ValueType*;
+
+    SliceIterator(Iterator iterable)
+      : iterable_(iterable) {}
+
+    SliceIterator& operator++() {
+        py::gil_scoped_acquire acquire;
+        iterable_++;
+        return *this;
+    }
+
+    SliceIterator operator++(int) {
+        py::gil_scoped_acquire acquire;
+        auto rv = *this;
+        iterable_++;
+        return rv;
+    }
+
+    reference operator*() {
+      py::gil_scoped_acquire acquire;
+      value_ = iterable_->cast<value_type>();
+      return value_;
+    }
+
+    pointer operator->() { 
+      operator*(); 
+      return &value_; 
+    }
+
+    friend
+    bool operator==(const SliceIterator &a, const SliceIterator &b) { 
+        py::gil_scoped_acquire acquire;
+       return a.iterable_ == b.iterable_; 
+    }
+
+    friend
+    bool operator!=(const SliceIterator &a, const SliceIterator &b) { 
+      py::gil_scoped_acquire acquire;
+      return a.iterable_ != b.iterable_;
+    }
+
+  private:
+    Iterator iterable_;
+    value_type value_;
+  };
+
+  /**
+   * Make the slice iterator
+   * @param iterator The pybind11 iterator to wrap
+   * @returns The slice iterator
+   */
+  template <typename ValueType, typename Iterator>
+  SliceIterator<ValueType, Iterator> make_slice_iterator(Iterator iterator) {
+    return SliceIterator<ValueType, Iterator>(iterator);
+  }
+
+  /**
+   * Wrap the simulate function
+   * @param config The system configuration
+   * @param input The input
+   * @param sequence The sequence
+   * @returns The simulation results
+   */
+  multem::Output simulate_slices(
+        multem::SystemConfiguration config, 
+        multem::Input input, 
+        py::sequence sequence) {
+      typedef std::vector<multem::Atom> value_type;
+
+      // Get the begin iterator and acquire the GIL
+      auto begin = [](py::sequence sequence) {
+        py::gil_scoped_acquire acquire;
+        return sequence.begin(); 
+      };
+      
+      // Get the end iterator and acquire the GIL
+      auto end = [](py::sequence sequence) {
+        py::gil_scoped_acquire acquire;
+        return sequence.end(); 
+      };
+
+      // Call the simulate method
+      return multem::simulate_slices(
+          config, 
+          input, 
+          make_slice_iterator<value_type>(begin(sequence)), 
+          make_slice_iterator<value_type>(end(sequence)));
+  }
   
   /**
    * Type cast a multem::Atom object to a tuple
@@ -1075,6 +1174,7 @@ PYBIND11_MODULE(multem_ext, m)
   // to avoid instability in software using python threads. This was observed to
   // be an issue with dask parallism on the cluster
   m.def("simulate", &multem::simulate, py::call_guard<py::gil_scoped_release>());
+  m.def("simulate", &py::detail::simulate_slices, py::call_guard<py::gil_scoped_release>());
 
   // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);

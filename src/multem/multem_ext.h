@@ -572,6 +572,7 @@ namespace multem {
 
   };
 
+
   /**
    * Run the simulation
    * @param config The system configuration
@@ -579,6 +580,96 @@ namespace multem {
    * @returns The simulation results
    */
   Output simulate(SystemConfiguration config, Input input);
+ 
+  /**
+   * Run the simulation. This overload performs the simulation for a sample
+   * that is split into a number of slices. This might be done because the
+   * sample is too big to simulate all at once for example. This function
+   * was written based on a script from Thomas Friedrich.
+   * @param config The system configuration
+   * @param input The input
+   * @param first The first slice
+   * @param slice The last slice
+   * @returns The simulation results
+   */
+  template <typename SliceIterator>
+  Output simulate_slices(
+      SystemConfiguration config, 
+      Input input, 
+      SliceIterator first, 
+      SliceIterator last) {
+    
+    Output result;
+
+    // Get the number of phonons
+    std::size_t n_phonons = input.pn_nconf;
+    if (n_phonons == 0) {
+      throw std::runtime_error("number of phonons must be > 0"); 
+    }
+
+    // Need to override some stuff. This is from a script from Thomas Friedrich
+    input.pn_coh_contrib = true;
+    input.pn_single_conf = true;
+    input.illumination_model = "Coherent";
+    input.temporal_spatial_incoh = "Temporal_Spatial";
+    input.obj_lens_zero_defocus_type = "Last";
+
+    // The total wave vector
+    std::vector<double> psi_tot(input.nx * input.ny);
+
+    // Loop through the number of phonons
+    for (std::size_t p = 0; p < n_phonons; ++p) {
+
+      // Set the current phonon
+      input.pn_nconf = p+1;
+
+      // Loop through the slices of the sample
+      for (auto slice = first; slice != last; ++slice) {
+
+        // Set the input atoms
+        input.spec_atoms = *slice;
+
+        // On the first iteration then set the input wave as a plane wave and on
+        // the subsequent iterations set the input wave as the previous exit
+        // wave.
+        if (slice == first) {
+          input.iw_type = "Plane_Wave";
+        } else {
+          input.iw_type = "User_Define_Wave";
+          input.iw_psi = result.data.back().psi_coh.data;
+        }
+        input.iw_x = { 0.5*input.spec_lx };
+        input.iw_y = { 0.5*input.spec_ly };
+
+        // Run the simulation
+        result = simulate(config, input);
+
+        // Increment the random seed
+        input.pn_seed++;
+      }
+
+      // Add this contribution to the wave vector
+      if (result.data.size() == 0 || psi_tot.size() != result.data.back().psi_coh.data.size()) {
+        throw std::runtime_error("invalid array sizes");
+      }
+      for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
+        psi_tot[i] += std::pow(std::abs(result.data.back().psi_coh.data[i]), 2);
+      }
+    }
+
+    // Divide by the number of phonons
+    for (auto &x : psi_tot) {
+      x /= n_phonons;
+    }
+
+    // Set the result
+    result.data.back().m2psi_tot = Image<double>(
+        psi_tot.data(), result.data.back().psi_coh.shape);
+
+    // Return the result
+    return result;
+  }
+
 
   /**
    * @returns True/False if the GPU is available

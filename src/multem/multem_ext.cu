@@ -968,6 +968,7 @@ namespace multem {
     return result;
   }
 
+
   bool is_gpu_available() {
     return mt::is_gpu_available();
   }
