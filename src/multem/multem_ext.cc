@@ -870,12 +870,9 @@ namespace pybind11 { namespace detail {
      */
     static multem::Image<T> init_from_array_t(py::array_t<T> array) {
       py::buffer_info buffer = array.request();
-      if (buffer.ndim != 2) {
-        throw std::runtime_error("Number of dimensions must be two");
-      }
-      if (buffer.shape[0] < 0 || buffer.shape[1] < 0) {
-        throw std::runtime_error("Size must be greater than 0");
-      }
+      MULTEM_ASSERT(buffer.ndim == 2);
+      MULTEM_ASSERT(buffer.shape[0] >= 0);
+      MULTEM_ASSERT(buffer.shape[1] >= 0);
       return multem::Image<T>(
         (T *) buffer.ptr, 
         typename multem::Image<T>::shape_type({

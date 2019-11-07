@@ -13,9 +13,11 @@
 #define MULTEM_EXT_H
 
 #include <array>
+#include <cassert>
+#include <complex>
 #include <string>
 #include <vector>
-#include <complex>
+#include <multem/error.h>
 
 namespace multem {
 
@@ -598,14 +600,17 @@ namespace multem {
       Input input, 
       SliceIterator first, 
       SliceIterator last) {
-    
+
+    // The result
     Output result;
 
     // Get the number of phonons
-    std::size_t n_phonons = input.pn_nconf;
-    if (n_phonons == 0) {
-      throw std::runtime_error("number of phonons must be > 0"); 
-    }
+    std::size_t n_phonons = (
+      input.pn_model == "Frozen_Phonon"
+        ? (input.pn_single_conf ? 1 : input.pn_nconf)
+        : 1);
+    MULTEM_ASSERT(n_phonons > 0);
+    MULTEM_ASSERT(input.iw_type == "Plane_Wave");
 
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;
@@ -615,7 +620,8 @@ namespace multem {
     input.obj_lens_zero_defocus_type = "Last";
 
     // The total wave vector
-    std::vector<double> psi_tot(input.nx * input.ny);
+    std::size_t image_size = input.nx * input.ny;
+    std::vector<double> m2psi_tot(image_size);
 
     // Loop through the number of phonons
     for (std::size_t p = 0; p < n_phonons; ++p) {
@@ -644,27 +650,37 @@ namespace multem {
         // Run the simulation
         result = simulate(config, input);
 
+        // Check the output
+        MULTEM_ASSERT(result.data.size() != 0);
+        MULTEM_ASSERT(result.data.back().psi_coh.data.size() == image_size);
+
         // Increment the random seed
         input.pn_seed++;
       }
 
-      // Add this contribution to the wave vector
-      if (result.data.size() == 0 || psi_tot.size() != result.data.back().psi_coh.data.size()) {
-        throw std::runtime_error("invalid array sizes");
-      }
-      for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
-        psi_tot[i] += std::pow(std::abs(result.data.back().psi_coh.data[i]), 2);
+      // Set the contribution to the total 
+      if (result.data.back().m2psi_tot.data.size() > 0) {
+        MULTEM_ASSERT(m2psi_tot.size() == result.data.back().m2psi_tot.data.size());
+        for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
+          m2psi_tot[i] += result.data.back().m2psi_tot.data[i];
+        }
+      } else {
+        MULTEM_ASSERT(m2psi_tot.size() == result.data.back().psi_coh.data.size());
+        for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
+          m2psi_tot[i] += std::pow(std::abs(result.data.back().psi_coh.data[i]), 2);
+        }
       }
     }
 
     // Divide by the number of phonons
-    for (auto &x : psi_tot) {
+    for (auto &x : m2psi_tot) {
       x /= n_phonons;
     }
 
     // Set the result
     result.data.back().m2psi_tot = Image<double>(
-        psi_tot.data(), result.data.back().psi_coh.shape);
+        m2psi_tot.data(), 
+        result.data.back().psi_coh.shape);
 
     // Return the result
     return result;

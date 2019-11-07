@@ -43,7 +43,6 @@ def create_input_multislice(n_phonons, single_phonon_conf=False):
     input_multislice.ny = 1024
 
     input_multislice.iw_type = "Plane_Wave"
-    # input_multislice.iw_psi = read_psi_0_multem(input_multislice.nx, input_multislice.ny);    % user define incident wave
     input_multislice.iw_x = [0.5 * input_multislice.spec_lx]
     input_multislice.iw_y = [0.5 * input_multislice.spec_ly]
 
@@ -138,7 +137,6 @@ if __name__ == "__main__":
     start_time = time.time()
 
     # Create the input multislice configuration
-    input_multislice = create_input_multislice(n_phonons, True)
     n_slices = 4
 
     subslices, input_multislice.spec_lz = subslice_spec(

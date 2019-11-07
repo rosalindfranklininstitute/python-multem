@@ -82,7 +82,7 @@ namespace multem {
           return it.first;
         }
       }
-      throw std::runtime_error(unknown_enum_string_message<T>(name));
+      throw multem::Error(unknown_enum_string_message<T>(name));
     }
 
     /**
@@ -499,12 +499,10 @@ namespace multem {
       output_multislice.clean_temporal();
       fft_2d.cleanup();
 
-      // If there was an error then throw and exception
+      // If there was an error then throw an exception
       auto err = cudaGetLastError();
       if (err != cudaSuccess) {
-        std::stringstream message;
-        message << "CUDA error: " << cudaGetErrorString(err) << "\n";
-        throw std::runtime_error(message.str());
+        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
       }
     }
  
@@ -958,12 +956,8 @@ namespace multem {
     } else if (config.device == "device" && config.precision == "double") {
       result = run_multislice<double, mt::e_device>(config, input);
     } else {
-      if (config.device != "host" && config.device != "device") {
-        throw std::runtime_error("Unknown device");
-      }
-      if (config.precision != "float" && config.precision != "double") {
-        throw std::runtime_error("Unknown precision");
-      }
+      MULTEM_ASSERT(config.device == "host" || config.device == "device");
+      MULTEM_ASSERT(config.precision == "float" || config.precision == "double");
     } 
     return result;
   }
