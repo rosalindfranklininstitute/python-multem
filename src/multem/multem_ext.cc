@@ -35,16 +35,16 @@ namespace pybind11 { namespace detail {
       : iterable_(iterable) {}
 
     SliceIterator& operator++() {
-        py::gil_scoped_acquire acquire;
-        iterable_++;
-        return *this;
+      py::gil_scoped_acquire acquire;
+      iterable_++;
+      return *this;
     }
 
     SliceIterator operator++(int) {
-        py::gil_scoped_acquire acquire;
-        auto rv = *this;
-        iterable_++;
-        return rv;
+      py::gil_scoped_acquire acquire;
+      auto rv = *this;
+      iterable_++;
+      return rv;
     }
 
     reference operator*() {
@@ -60,8 +60,8 @@ namespace pybind11 { namespace detail {
 
     friend
     bool operator==(const SliceIterator &a, const SliceIterator &b) { 
-        py::gil_scoped_acquire acquire;
-       return a.iterable_ == b.iterable_; 
+      py::gil_scoped_acquire acquire;
+      return a.iterable_ == b.iterable_; 
     }
 
     friend
@@ -96,26 +96,26 @@ namespace pybind11 { namespace detail {
         multem::SystemConfiguration config, 
         multem::Input input, 
         py::sequence sequence) {
-      typedef std::vector<multem::Atom> value_type;
+    typedef std::vector<multem::Atom> value_type;
 
-      // Get the begin iterator and acquire the GIL
-      auto begin = [](py::sequence sequence) {
-        py::gil_scoped_acquire acquire;
-        return sequence.begin(); 
-      };
-      
-      // Get the end iterator and acquire the GIL
-      auto end = [](py::sequence sequence) {
-        py::gil_scoped_acquire acquire;
-        return sequence.end(); 
-      };
+    // Get the begin iterator and acquire the GIL
+    auto begin = [](py::sequence sequence) {
+      py::gil_scoped_acquire acquire;
+      return sequence.begin(); 
+    };
+    
+    // Get the end iterator and acquire the GIL
+    auto end = [](py::sequence sequence) {
+      py::gil_scoped_acquire acquire;
+      return sequence.end(); 
+    };
 
-      // Call the simulate method
-      return multem::simulate_slices(
-          config, 
-          input, 
-          make_slice_iterator<value_type>(begin(sequence)), 
-          make_slice_iterator<value_type>(end(sequence)));
+    // Call the simulate method
+    return multem::simulate_slices(
+        config, 
+        input, 
+        make_slice_iterator<value_type>(begin(sequence)), 
+        make_slice_iterator<value_type>(end(sequence)));
   }
   
   /**
