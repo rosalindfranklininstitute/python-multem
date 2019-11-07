@@ -610,7 +610,13 @@ namespace multem {
         ? (input.pn_single_conf ? 1 : input.pn_nconf)
         : 1);
     MULTEM_ASSERT(n_phonons > 0);
+
+    // Check some input. This function requires that the input wave type is a
+    // plane wave and that the simulation is an EWRS (exit wave real space)
+    // simulation. If HRTEM is set for example, then no exit wave is calculated
+    // so it can't be propagated to the next slice
     MULTEM_ASSERT(input.iw_type == "Plane_Wave");
+    MULTEM_ASSERT(input.simulation_type == "EWRS");
 
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;

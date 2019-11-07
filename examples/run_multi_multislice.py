@@ -14,7 +14,8 @@ def create_input_multislice(n_phonons, single_phonon_conf=False):
 
     input_multislice.potential_type = "Lobato_0_12"
 
-    input_multislice.pn_model = "Frozen_Phonon"
+    input_multislice.pn_model = "Still_Atom"
+    # input_multislice.pn_model = "Frozen_Phonon"
     input_multislice.pn_dim = 110
     input_multislice.pn_seed = 300183
     input_multislice.pn_single_conf = single_phonon_conf
@@ -131,6 +132,11 @@ if __name__ == "__main__":
     print("Standard")
     start_time = time.time()
     ewrs = multem.simulate(system_conf, input_multislice)
+
+    print(numpy.array(ewrs.data[-1].m2psi_coh).shape)
+    print(numpy.array(ewrs.data[-1].m2psi_tot).shape)
+    print(numpy.array(ewrs.data[-1].psi_coh).shape)
+
     print("Time taken: ", time.time() - start_time)
 
     print("Subslicing")
@@ -142,6 +148,9 @@ if __name__ == "__main__":
     subslices, input_multislice.spec_lz = subslice_spec(
         input_multislice.spec_atoms, input_multislice.spec_lz, n_slices
     )
+    print(len(subslices))
+    print(len(subslices[0]))
+    print(len(input_multislice.spec_atoms))
 
     output_multislice = multem.simulate(system_conf, input_multislice, subslices)
 
@@ -150,7 +159,11 @@ if __name__ == "__main__":
     from matplotlib import pylab
 
     a = numpy.array(ewrs.data[-1].m2psi_tot)
+    if len(a) == 0:
+        a = numpy.abs(numpy.array(ewrs.data[-1].psi_coh)) ** 2
     b = numpy.array(output_multislice.data[-1].m2psi_tot)
+    print(a.shape)
+    print(b.shape)
 
     import pickle
 
