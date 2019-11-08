@@ -621,8 +621,6 @@ namespace multem {
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;
     input.pn_single_conf = true;
-    input.illumination_model = "Coherent";
-    input.temporal_spatial_incoh = "Temporal_Spatial";
     input.obj_lens_zero_defocus_type = "Last";
 
     // The total wave vector
