@@ -36,18 +36,18 @@ def slice_spec_atoms(atoms, length_z, num_slices):
     # Get the atom z
     _, _, _, atom_z, _, _, _, _ = zip(*atoms)
     atom_z = numpy.array(atom_z)
-    print(numpy.max(atom_z), length_z)
-    assert numpy.min(atom_z) >= 0
-    assert numpy.max(atom_z) <= length_z
+    min_z = numpy.min(atom_z)
+    max_z = numpy.max(atom_z)
+    assert min_z >= 0
+    assert max_z <= length_z
     indices = numpy.arange(0, len(atoms))
 
     # Loop through the slices
     for i in range(num_slices):
         z0 = i * spec_lz
         z1 = (i + 1) * spec_lz
-        if i < num_slices - 1:
-            selection = (atom_z >= z0) & (atom_z < z1)
-        else:
-            selection = (atom_z >= z0) & (atom_z <= z1)
+        if i == num_slices - 1:
+            z1 = max(z1, max_z + 1)
+        selection = (atom_z >= z0) & (atom_z < z1)
         if numpy.count_nonzero(selection) > 0:
-            yield (z0, spec_lz, [atoms[i] for i in indices[selection]])
+            yield (z0, z1 - z0, [atoms[i] for i in indices[selection]])

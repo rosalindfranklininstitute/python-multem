@@ -611,12 +611,12 @@ namespace multem {
         : 1);
     MULTEM_ASSERT(n_phonons > 0);
 
+    // Save the simulation type and set it to exit wave reconstruction
+    auto simulation_type = input.simulation_type;
+
     // Check some input. This function requires that the input wave type is a
-    // plane wave and that the simulation is an EWRS (exit wave real space)
-    // simulation. If HRTEM is set for example, then no exit wave is calculated
-    // so it can't be propagated to the next slice
+    // plane wave  
     MULTEM_ASSERT(input.iw_type == "Plane_Wave");
-    MULTEM_ASSERT(input.simulation_type == "EWRS");
 
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;
@@ -640,6 +640,16 @@ namespace multem {
 
       // Loop through the slices of the sample
       for (auto slice = first; slice != last; ++slice) {
+        
+        // On the last iteration set the simulation type back to the input type.
+        // On all previous iterations the simulation is an EWRS (exit wave real space)
+        // simulation. If HRTEM is set for example, then no exit wave is calculated
+        // so it can't be propagated to the next slice
+        if (slice != last - 1) {
+          input.simulation_type = "EWRS";
+        } else {
+          input.simulation_type = simulation_type;
+        }
 
         // Get the specimen size and set the input atoms
         // It's convenient to assign the s0 and lz to local variables
@@ -668,6 +678,7 @@ namespace multem {
         } else {
           input.iw_type = "User_Define_Wave";
           input.iw_psi = result.data.back().psi_coh.data;
+          MULTEM_ASSERT(result.data.back().psi_coh.data.size() == image_size);
         }
         input.iw_x = { 0.5*input.spec_lx };
         input.iw_y = { 0.5*input.spec_ly };
@@ -677,7 +688,6 @@ namespace multem {
 
         // Check the output
         MULTEM_ASSERT(result.data.size() != 0);
-        MULTEM_ASSERT(result.data.back().psi_coh.data.size() == image_size);
 
         // Increment the random seed
         input.pn_seed++;
@@ -686,12 +696,12 @@ namespace multem {
       // Set the contribution to the total 
       if (result.data.back().m2psi_tot.data.size() > 0) {
         MULTEM_ASSERT(m2psi_tot.size() == result.data.back().m2psi_tot.data.size());
-        for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
+        for (std::size_t i = 0; i < m2psi_tot.size(); ++i) {
           m2psi_tot[i] += result.data.back().m2psi_tot.data[i];
         }
       } else {
         MULTEM_ASSERT(m2psi_tot.size() == result.data.back().psi_coh.data.size());
-        for (std::size_t i = 0; i < result.data.back().psi_coh.data.size(); ++i) {
+        for (std::size_t i = 0; i < m2psi_tot.size(); ++i) {
           m2psi_tot[i] += std::pow(std::abs(result.data.back().psi_coh.data[i]), 2);
         }
       }
@@ -702,10 +712,16 @@ namespace multem {
       x /= n_phonons;
     }
 
+    // Get the image shape
+    auto image_shape = (
+        result.data.back().m2psi_tot.data.size() > 0 
+          ? result.data.back().m2psi_tot.shape
+          : result.data.back().psi_coh.shape);
+
     // Set the result
     result.data.back().m2psi_tot = Image<double>(
         m2psi_tot.data(), 
-        result.data.back().psi_coh.shape);
+        image_shape);
 
     // Return the result
     return result;

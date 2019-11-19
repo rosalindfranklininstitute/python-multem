@@ -46,6 +46,16 @@ namespace pybind11 { namespace detail {
       iterable_++;
       return rv;
     }
+    
+    SliceIterator operator-(int x) {
+      py::gil_scoped_acquire acquire;
+      return SliceIterator(iterable_ - 1);
+    }
+
+    SliceIterator operator+(int x) {
+      py::gil_scoped_acquire acquire;
+      return SliceIterator(iterable_ + 1);
+    }
 
     reference operator*() {
       py::gil_scoped_acquire acquire;
