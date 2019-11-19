@@ -621,6 +621,11 @@ namespace multem {
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;
     input.pn_single_conf = true;
+    
+    // Need to set the zero defocus type to Last because in the multi slice
+    // calculation for the exit wave the only position that makes physical sense
+    // is the last plane at the exit of the sameple. Typically, we always want
+    // this to be the last position in the forward simulation.
     input.obj_lens_zero_defocus_type = "Last";
 
     // The total wave vector
@@ -632,12 +637,28 @@ namespace multem {
 
       // Set the current phonon
       input.pn_nconf = p+1;
-
+      std::cout << p << std::endl;
       // Loop through the slices of the sample
       for (auto slice = first; slice != last; ++slice) {
 
-        // Set the input atoms
-        input.spec_atoms = *slice;
+        // Get the specimen size and set the input atoms
+        // It's convenient to assign the s0 and lz to local variables
+        // to avoid dereferencing the iterator many times in the loop below
+        // which in the python wrapper calls the GIL and will slow things down.
+        double spec_z0 = slice->spec_z0;
+        double spec_lz = slice->spec_lz;
+        MULTEM_ASSERT(spec_z0 >= 0);
+        MULTEM_ASSERT(spec_lz > 0);
+        input.spec_lz = spec_lz;
+        input.spec_atoms = slice->spec_atoms;
+        
+        // We need to shift the Z coordinates of the atoms such that they lie
+        // within the box
+        for (auto &atom : input.spec_atoms) {
+          MULTEM_ASSERT(atom.z >= spec_z0);
+          atom.z -= spec_z0;
+          MULTEM_ASSERT(atom.z < spec_lz);
+        }
 
         // On the first iteration then set the input wave as a plane wave and on
         // the subsequent iterations set the input wave as the previous exit

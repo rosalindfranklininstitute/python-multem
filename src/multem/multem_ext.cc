@@ -86,6 +86,19 @@ namespace pybind11 { namespace detail {
   }
 
   /**
+   * A class to hold the sub-sliced atoms
+   */
+  class Slice {
+  public:
+    std::vector<multem::Atom> spec_atoms;
+    double spec_lz;
+    double spec_z0;
+    Slice()
+      : spec_lz(0),
+        spec_z0(0) {}
+  };
+
+  /**
    * Wrap the simulate function
    * @param config The system configuration
    * @param input The input
@@ -96,7 +109,6 @@ namespace pybind11 { namespace detail {
         multem::SystemConfiguration config, 
         multem::Input input, 
         py::sequence sequence) {
-    typedef std::vector<multem::Atom> value_type;
 
     // Get the begin iterator and acquire the GIL
     auto begin = [](py::sequence sequence) {
@@ -114,10 +126,11 @@ namespace pybind11 { namespace detail {
     return multem::simulate_slices(
         config, 
         input, 
-        make_slice_iterator<value_type>(begin(sequence)), 
-        make_slice_iterator<value_type>(end(sequence)));
+        make_slice_iterator<Slice>(begin(sequence)), 
+        make_slice_iterator<Slice>(end(sequence)));
   }
   
+
   /**
    * Type cast a multem::Atom object to a tuple
    */
@@ -157,6 +170,7 @@ namespace pybind11 { namespace detail {
         src.charge).release();
     }
   };
+
   
   /**
    * Type cast a multem::AmorphousLayer object to a tuple
@@ -271,6 +285,38 @@ namespace pybind11 { namespace detail {
         src.fR).release();
     }
   };
+  
+
+  /**
+   * Type cast a Slice object to a tuple
+   */
+  template <> 
+  class type_caster<Slice> {
+  public:
+  
+    PYBIND11_TYPE_CASTER(Slice, _("Slice"));
+
+    bool load(handle src, bool convert) {
+      if (py::isinstance<py::tuple>(src)) {
+        py::tuple t = py::cast<py::tuple>(src);
+        if (py::len(t) == 3) {
+          value.spec_z0 = py::cast<double>(t[0]);
+          value.spec_lz = py::cast<double>(t[1]);
+          value.spec_atoms = py::cast< std::vector<multem::Atom> >(t[2]);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    static handle cast(Slice src, return_value_policy policy, handle parent) {
+      return py::make_tuple(
+        src.spec_z0, 
+        src.spec_lz, 
+        src.spec_atoms).release();
+    }
+  };
+
 
   /**
    * Get the py::buffer_info from a std::vector
