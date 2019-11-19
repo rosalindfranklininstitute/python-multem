@@ -637,7 +637,7 @@ namespace multem {
 
       // Set the current phonon
       input.pn_nconf = p+1;
-      std::cout << p << std::endl;
+
       // Loop through the slices of the sample
       for (auto slice = first; slice != last; ++slice) {
 
