@@ -616,7 +616,7 @@ namespace multem {
 
     // Check some input. This function requires that the input wave type is a
     // plane wave  
-    MULTEM_ASSERT(input.iw_type == "Plane_Wave");
+    MULTEM_ASSERT(input.iw_type == "Plane_Wave" || input.iw_type == "Auto");
 
     // Need to override some stuff. This is from a script from Thomas Friedrich
     input.pn_coh_contrib = true;
@@ -678,10 +678,10 @@ namespace multem {
         } else {
           input.iw_type = "User_Define_Wave";
           input.iw_psi = result.data.back().psi_coh.data;
+          input.iw_x = { 0.5*input.spec_lx };
+          input.iw_y = { 0.5*input.spec_ly };
           MULTEM_ASSERT(result.data.back().psi_coh.data.size() == image_size);
         }
-        input.iw_x = { 0.5*input.spec_lx };
-        input.iw_y = { 0.5*input.spec_ly };
 
         // Run the simulation
         result = simulate(config, input);

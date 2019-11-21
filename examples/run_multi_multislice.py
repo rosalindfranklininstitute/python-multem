@@ -9,23 +9,65 @@ from SrTiO3001Crystal import SrTiO3001_crystal
 
 def create_input_multislice(n_phonons, single_phonon_conf=False):
 
+    # Initialise the input and system configuration
     input_multislice = multem.Input()
 
+    # Set simulation experiment
     input_multislice.simulation_type = "HRTEM"
-    input_multislice.interaction_model = "Multislice"
-    input_multislice.potential_slicing = "Planes"
 
+    # Electron-Specimen interaction model
+    input_multislice.interaction_model = "Multislice"
     input_multislice.potential_type = "Lobato_0_12"
 
-    input_multislice.pn_model = "Still_Atom"
-    # input_multislice.pn_model = "Frozen_Phonon"
-    input_multislice.pn_dim = 110
-    input_multislice.pn_seed = 300183
-    input_multislice.pn_single_conf = single_phonon_conf
-    input_multislice.pn_nconf = n_phonons
+    # Potential slicing
+    input_multislice.potential_slicing = "dz_Proj"
 
+    # Electron-Phonon interaction model
+    input_multislice.pn_model = "Still_Atom"
+    input_multislice.pn_coh_contrib = 0
+    input_multislice.pn_single_conf = False
+    input_multislice.pn_nconf = 10
+    input_multislice.pn_dim = 110
+    input_multislice.pn_seed = 300_183
+
+    # Specimen thickness
     input_multislice.thick_type = "Whole_Spec"
 
+    # Illumination model
+    input_multislice.illumination_model = "Partial_Coherent"
+    input_multislice.temporal_spatial_incoh = "Temporal_Spatial"
+
+    input_multislice.nx = 1024
+    input_multislice.ny = 1024
+
+    input_multislice.obj_lens_m = 0
+    input_multislice.obj_lens_c_10 = 15.836
+    input_multislice.obj_lens_c_30 = 1e-03
+    input_multislice.obj_lens_c_50 = 0.00
+    input_multislice.obj_lens_c_12 = 0.0
+    input_multislice.obj_lens_phi_12 = 0.0
+    input_multislice.obj_lens_c_23 = 0.0
+    input_multislice.obj_lens_phi_23 = 0.0
+    input_multislice.obj_lens_inner_aper_ang = 0.0
+    input_multislice.obj_lens_outer_aper_ang = 24.0
+    input_multislice.obj_lens_zero_defocus_type = "Last"
+    input_multislice.obj_lens_zero_defocus_plane = 0
+
+    return input_multislice
+
+
+if __name__ == "__main__":
+
+    # Create the system configuration
+    system_conf = multem.SystemConfiguration()
+    system_conf.precision = "float"
+    system_conf.device = "device"
+
+    # Create the input multislice configuration
+    n_phonons = 50
+    input_multislice = create_input_multislice(n_phonons, False)
+
+    # Create the specimen atoms
     na = 12
     nb = 12
     nc = 12
@@ -42,58 +84,6 @@ def create_input_multislice(n_phonons, single_phonon_conf=False):
         c,
         input_multislice.spec_dz,
     ) = SrTiO3001_crystal(na, nb, nc, ncu, rms3d)
-
-    input_multislice.nx = 1024
-    input_multislice.ny = 1024
-
-    input_multislice.iw_type = "Plane_Wave"
-    input_multislice.iw_x = [0.5 * input_multislice.spec_lx]
-    input_multislice.iw_y = [0.5 * input_multislice.spec_ly]
-
-    input_multislice.cond_lens_m = 0
-    input_multislice.cond_lens_c_10 = 1110
-    input_multislice.cond_lens_c_30 = 3.3
-    input_multislice.cond_lens_c_50 = 0.00
-    input_multislice.cond_lens_c_12 = 0.0
-    input_multislice.cond_lens_phi_12 = 0.0
-    input_multislice.cond_lens_c_23 = 0.0
-    input_multislice.cond_lens_phi_23 = 0.0
-    input_multislice.cond_lens_inner_aper_ang = 0.0
-    input_multislice.cond_lens_outer_aper_ang = 7.50
-    input_multislice.cond_lens_zero_defocus_type = "First"
-    input_multislice.cond_lens_zero_defocus_plane = 0
-
-    input_multislice.obj_lens_m = 0
-    input_multislice.obj_lens_c_10 = 15.836
-    input_multislice.obj_lens_c_30 = 1e-03
-    input_multislice.obj_lens_c_50 = 0.00
-    input_multislice.obj_lens_c_12 = 0.0
-    input_multislice.obj_lens_phi_12 = 0.0
-    input_multislice.obj_lens_c_23 = 0.0
-    input_multislice.obj_lens_phi_23 = 0.0
-    input_multislice.obj_lens_inner_aper_ang = 0.0
-    input_multislice.obj_lens_outer_aper_ang = 24.0
-    input_multislice.obj_lens_zero_defocus_type = "Last"
-    input_multislice.obj_lens_zero_defocus_plane = 0
-
-    input_multislice.output_area_ix_0 = 1
-    input_multislice.output_area_iy_0 = 1
-    input_multislice.output_area_ix_e = 1
-    input_multislice.output_area_iy_e = 1
-
-    return input_multislice
-
-
-if __name__ == "__main__":
-
-    # Create the system configuration
-    system_conf = multem.SystemConfiguration()
-    system_conf.precision = "float"
-    system_conf.device = "device"
-
-    # Create the input multislice configuration
-    n_phonons = 50
-    input_multislice = create_input_multislice(n_phonons, False)
 
     print("Standard")
     start_time = time.time()
