@@ -50,4 +50,4 @@ def slice_spec_atoms(atoms, length_z, num_slices):
             z1 = max(z1, max_z + 1)
         selection = (atom_z >= z0) & (atom_z < z1)
         if numpy.count_nonzero(selection) > 0:
-            yield (z0, z1 - z0, [atoms[i] for i in indices[selection]])
+            yield (z0, z1 - z0, AtomList(atoms[i] for i in indices[selection]))

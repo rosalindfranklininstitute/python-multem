@@ -13,9 +13,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 #include <multem/multem_ext.h>
 
 namespace py = pybind11;
+
+// Make the vector of atoms opaque
+PYBIND11_MAKE_OPAQUE(std::vector<multem::Atom>);
 
 namespace pybind11 { namespace detail {
 
@@ -150,7 +154,7 @@ namespace pybind11 { namespace detail {
   
     PYBIND11_TYPE_CASTER(multem::Atom, _("multem::Atom"));
 
-    bool load(object src, bool convert) {
+    bool load(handle src, bool convert) {
       if (py::isinstance<py::tuple>(src)) {
         py::tuple t = py::cast<py::tuple>(src);
         if (py::len(t) == 8) {
@@ -191,7 +195,7 @@ namespace pybind11 { namespace detail {
   
     PYBIND11_TYPE_CASTER(multem::AmorphousLayer, _("multem::AmorphousLayer"));
 
-    bool load(object src, bool convert) {
+    bool load(handle src, bool convert) {
       if (py::isinstance<py::tuple>(src)) {
         py::tuple t = py::cast<py::tuple>(src);
         if (py::len(t) == 3) {
@@ -221,7 +225,7 @@ namespace pybind11 { namespace detail {
   
     PYBIND11_TYPE_CASTER(multem::STEMDetector::Angles, _("multem::STEMDetector::Angles"));
 
-    bool load(object src, bool convert) {
+    bool load(handle src, bool convert) {
       if (py::isinstance<py::tuple>(src)) {
         py::tuple t = py::cast<py::tuple>(src);
         if (py::len(t) == 2) {
@@ -249,7 +253,7 @@ namespace pybind11 { namespace detail {
   
     PYBIND11_TYPE_CASTER(multem::STEMDetector::Radial, _("multem::STEMDetector::Radial"));
 
-    bool load(object src, bool convert) {
+    bool load(handle src, bool convert) {
       if (py::isinstance<py::tuple>(src)) {
         py::tuple t = py::cast<py::tuple>(src);
         if (py::len(t) == 2) {
@@ -277,7 +281,7 @@ namespace pybind11 { namespace detail {
   
     PYBIND11_TYPE_CASTER(multem::STEMDetector::Matrix, _("multem::STEMDetector::Matrix"));
 
-    bool load(object src, bool convert) {
+    bool load(handle src, bool convert) {
       if (py::isinstance<py::tuple>(src)) {
         py::tuple t = py::cast<py::tuple>(src);
         if (py::len(t) == 2) {
@@ -1007,9 +1011,12 @@ namespace pybind11 { namespace detail {
 
 }}
 
-
 PYBIND11_MODULE(multem_ext, m)
 {
+
+  // Wrap the vector of atoms
+  py::bind_vector<std::vector<multem::Atom>>(m, "AtomList");
+
   // Wrap the multem::CrystalParameters class
   py::class_<multem::CrystalParameters>(m, "CrystalParameters")
     .def(py::init<>())
