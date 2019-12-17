@@ -693,11 +693,11 @@ namespace multem {
       input_multislice.cond_lens.outer_aper_ang = input.cond_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      input_multislice.cond_lens.dsf_sigma = input.cond_lens_dsf_sigma;
+      input_multislice.cond_lens.set_dsf_sigma(input.cond_lens_dsf_sigma);
       input_multislice.cond_lens.dsf_npoints = input.cond_lens_dsf_npoints;
 
       // source spread function
-      input_multislice.cond_lens.ssf_sigma = input.cond_lens_ssf_sigma;
+      input_multislice.cond_lens.set_ssf_sigma(input.cond_lens_ssf_sigma);
       input_multislice.cond_lens.ssf_npoints = input.cond_lens_ssf_npoints;
 
       // zero defocus reference
@@ -737,11 +737,11 @@ namespace multem {
       input_multislice.obj_lens.outer_aper_ang = input.obj_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      input_multislice.obj_lens.dsf_sigma = input.obj_lens_dsf_sigma;
+      input_multislice.obj_lens.set_dsf_sigma(input.obj_lens_dsf_sigma);
       input_multislice.obj_lens.dsf_npoints = input.obj_lens_dsf_npoints;
 
       // source spread function
-      input_multislice.obj_lens.ssf_sigma = input_multislice.cond_lens.ssf_sigma;
+      input_multislice.obj_lens.set_ssf_sigma(input_multislice.cond_lens.ssf_sigma);
       input_multislice.obj_lens.ssf_npoints = input_multislice.cond_lens.ssf_npoints;
 
       // zero defocus reference
