@@ -398,7 +398,7 @@ namespace multem {
         cond_lens_ssf_npoints(8),
         cond_lens_dsf_sigma(32),
         cond_lens_dsf_npoints(10),
-        cond_lens_zero_defocus_type("First"),
+        cond_lens_zero_defocus_type("Last"),
         cond_lens_zero_defocus_plane(0),
         obj_lens_m(0),
         obj_lens_c_10(14.0312),
