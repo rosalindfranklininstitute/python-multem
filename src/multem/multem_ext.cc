@@ -53,7 +53,7 @@ namespace pybind11 { namespace detail {
     
     reference operator*() {
       py::gil_scoped_acquire acquire;
-      value_ = iterable_->cast<value_type>();
+      value_ = iterable_->template cast<value_type>();
       return value_;
     }
 
