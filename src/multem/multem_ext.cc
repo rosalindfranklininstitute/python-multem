@@ -51,16 +51,6 @@ namespace pybind11 { namespace detail {
       return rv;
     }
     
-    SliceIterator operator-(int x) {
-      py::gil_scoped_acquire acquire;
-      return SliceIterator(iterable_ - 1);
-    }
-
-    SliceIterator operator+(int x) {
-      py::gil_scoped_acquire acquire;
-      return SliceIterator(iterable_ + 1);
-    }
-
     reference operator*() {
       py::gil_scoped_acquire acquire;
       value_ = iterable_->cast<value_type>();
@@ -122,26 +112,14 @@ namespace pybind11 { namespace detail {
   multem::Output simulate_slices(
         multem::SystemConfiguration config, 
         multem::Input input, 
-        py::sequence sequence) {
-
-    // Get the begin iterator and acquire the GIL
-    auto begin = [](py::sequence sequence) {
-      py::gil_scoped_acquire acquire;
-      return sequence.begin(); 
-    };
-    
-    // Get the end iterator and acquire the GIL
-    auto end = [](py::sequence sequence) {
-      py::gil_scoped_acquire acquire;
-      return sequence.end(); 
-    };
+        py::iterator iterator) {
 
     // Call the simulate method
     return multem::simulate_slices(
         config, 
         input, 
-        make_slice_iterator<Slice>(begin(sequence)), 
-        make_slice_iterator<Slice>(end(sequence)));
+        make_slice_iterator<Slice>(iterator), 
+        make_slice_iterator<Slice>(iterator.sentinel()));
   }
   
 

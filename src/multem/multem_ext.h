@@ -610,6 +610,7 @@ namespace multem {
         ? (input.pn_single_conf ? 1 : input.pn_nconf)
         : 1);
     MULTEM_ASSERT(n_phonons > 0);
+    MULTEM_ASSERT(input.simulation_type == "EWRS");
 
     // Save the simulation type and set it to exit wave reconstruction
     auto simulation_type = input.simulation_type;
@@ -639,17 +640,8 @@ namespace multem {
       input.pn_nconf = p+1;
 
       // Loop through the slices of the sample
+      std::size_t count_non_zero = 0;
       for (auto slice = first; slice != last; ++slice) {
-        
-        // On the last iteration set the simulation type back to the input type.
-        // On all previous iterations the simulation is an EWRS (exit wave real space)
-        // simulation. If HRTEM is set for example, then no exit wave is calculated
-        // so it can't be propagated to the next slice
-        if (slice != last - 1) {
-          input.simulation_type = "EWRS";
-        } else {
-          input.simulation_type = simulation_type;
-        }
 
         // Get the specimen size and set the input atoms
         // It's convenient to assign the s0 and lz to local variables
@@ -661,7 +653,10 @@ namespace multem {
         MULTEM_ASSERT(spec_lz > 0);
         input.spec_lz = spec_lz;
         input.spec_atoms = slice->spec_atoms;
-        
+        if (input.spec_atoms.size() == 0) {
+          continue;
+        }
+
         // We need to shift the Z coordinates of the atoms such that they lie
         // within the box
         for (auto &atom : input.spec_atoms) {
@@ -673,10 +668,11 @@ namespace multem {
         // On the first iteration then set the input wave as a plane wave and on
         // the subsequent iterations set the input wave as the previous exit
         // wave.
-        if (slice == first) {
+        if (count_non_zero == 0) {
           input.iw_type = "Plane_Wave";
         } else {
           input.iw_type = "User_Define_Wave";
+          MULTEM_ASSERT(result.data.size() == 1);
           input.iw_psi = result.data.back().psi_coh.data;
           input.iw_x = { 0.5*input.spec_lx };
           input.iw_y = { 0.5*input.spec_ly };
@@ -690,10 +686,15 @@ namespace multem {
         MULTEM_ASSERT(result.data.size() != 0);
 
         // Increment the random seed
+        count_non_zero++;
         input.pn_seed++;
       }
 
+      // Check some slices had atoms
+      MULTEM_ASSERT(count_non_zero > 0);
+
       // Set the contribution to the total 
+      MULTEM_ASSERT(result.data.size() == 1);
       if (result.data.back().m2psi_tot.data.size() > 0) {
         MULTEM_ASSERT(m2psi_tot.size() == result.data.back().m2psi_tot.data.size());
         for (std::size_t i = 0; i < m2psi_tot.size(); ++i) {
