@@ -642,17 +642,18 @@ namespace multem {
       // Loop through the slices of the sample
       std::size_t count_non_zero = 0;
       for (auto slice = first; slice != last; ++slice) {
-
+        //
         // Get the specimen size and set the input atoms
         // It's convenient to assign the s0 and lz to local variables
         // to avoid dereferencing the iterator many times in the loop below
         // which in the python wrapper calls the GIL and will slow things down.
-        double spec_z0 = slice->spec_z0;
-        double spec_lz = slice->spec_lz;
+        auto item = *slice;
+        double spec_z0 = item.spec_z0;
+        double spec_lz = item.spec_lz;
         MULTEM_ASSERT(spec_z0 >= 0);
         MULTEM_ASSERT(spec_lz > 0);
         input.spec_lz = spec_lz;
-        input.spec_atoms = slice->spec_atoms;
+        input.spec_atoms = item.spec_atoms;
         if (input.spec_atoms.size() == 0) {
           continue;
         }
