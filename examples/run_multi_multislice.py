@@ -13,7 +13,7 @@ def create_input_multislice(n_phonons, single_phonon_conf=False):
     input_multislice = multem.Input()
 
     # Set simulation experiment
-    input_multislice.simulation_type = "HRTEM"
+    input_multislice.simulation_type = "EWRS"
 
     # Electron-Specimen interaction model
     input_multislice.interaction_model = "Multislice"
@@ -96,11 +96,11 @@ if __name__ == "__main__":
     # Create the input multislice configuration
     n_slices = 4
 
-    subslices = list(
+    subslices = iter(list(
         multem.slice_spec_atoms(
             input_multislice.spec_atoms, input_multislice.spec_lz, n_slices
         )
-    )
+    ))
     output_multislice = multem.simulate(system_conf, input_multislice, subslices)
 
     print("Time taken: ", time.time() - start_time)
