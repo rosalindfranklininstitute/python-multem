@@ -14,6 +14,7 @@
 #include <stdexcept>
 #include <map>
 #include <string>
+#include <boost/math/special_functions/gamma.hpp>
 #include <cuda_runtime.h>
 #include <types.cuh>
 #include <input_multislice.cuh>
@@ -458,6 +459,256 @@ namespace multem {
       }
     };
 
+    
+    /**
+     * Extented multi slice class with additional methods
+     */
+    template <typename FloatType, mt::eDevice DeviceType>
+    class MultisliceExt : public mt::Multislice<FloatType, DeviceType> {
+    public:
+
+			using T_r = FloatType;
+			using T_c = complex<FloatType>;
+      using multislice_type = mt::Multislice<FloatType, DeviceType>;
+
+      template <typename TOutput_multislice>
+      void operator()(TOutput_multislice &output_multislice) {
+        multislice_type::operator()(output_multislice);
+      }
+
+      template <typename TOutput_multislice, typename Masker>
+      void operator()(TOutput_multislice &output_multislice, const Masker &masker) {
+
+        this->ext_niter = this->input_multislice->number_conf();
+        this->ext_iter = 0;
+
+				T_r w = this->input_multislice->get_phonon_rot_weight();
+
+				output_multislice.init();
+
+				for(auto iconf = this->input_multislice->fp_iconf_0; 
+            iconf <= this->input_multislice->pn_nconf; iconf++)
+				{
+					this->wave_function.move_atoms(iconf);
+
+					this->wave_function.set_incident_wave(this->wave_function.psi_z);
+
+          // Overriding behaviour of:
+					// wave_function.psi(w, wave_function.psi_z, output_multislice);
+          {
+            T_r gx_0 = this->wave_function.input_multislice->gx_0();
+            T_r gy_0 = this->wave_function.input_multislice->gy_0();
+
+            for(auto islice = 0; islice < this->wave_function.slicing.slice.size(); islice++)
+            {
+              // Overriding behaviour of:
+              //this->wave_function.psi_slice(gx_0, gy_0, islice, this->wave_function.psi_z);
+              {
+                //Overriding behaviour of:
+                //this->transmit(islice, this->wave_function.psi_z);
+                {
+                  // Overriding behaviour of:
+                  //this->wave_function->trans(islice, this->wave_function.trans_0);
+                  /* void trans(const int &islice, Vector<T_c, dev> &trans_0) */
+                  {
+                    if(islice < this->wave_function.memory_slice.n_slice_cur(
+                          this->wave_function.slicing.slice.size()))
+                    {
+                      if(this->wave_function.memory_slice.is_potential())
+                      {
+                        this->wave_function.trans(
+                            this->wave_function.input_multislice->Vr_factor(), 
+                            this->wave_function.Vp_v[islice], 
+                            this->wave_function.trans_0);
+                      }
+                      else if(this->wave_function.memory_slice.is_transmission())
+                      {
+                        mt::assign(this->wave_function.trans_v[islice], 
+                            this->wave_function.trans_0);
+                      }
+                    }
+                    else
+                    {
+					            //Projected_Potential<T, dev>::operator()(islice, this->V_0);
+                      this->wave_function(islice, this->wave_function.V_0);
+
+                      /**
+                       * Add the ice potential (the purpose of this function)
+                       */
+                      add_ice_potential(islice, this->wave_function.V_0, masker);
+
+                      this->wave_function.trans(this->input_multislice->Vr_factor(), 
+                          this->wave_function.V_0, this->wave_function.trans_0);
+                    }
+                  }
+                  
+                  mt::multiply(*(this->wave_function.stream), 
+                      this->wave_function.trans_0, this->wave_function.psi_z);
+                }
+
+                if(this->wave_function.input_multislice->is_multislice())
+                {
+                  this->wave_function.propagator(mt::eS_Real, gx_0, gy_0, 
+                      this->wave_function.dz(islice), this->wave_function.psi_z);
+                }
+              }
+
+              this->wave_function.set_m2psi_tot_psi_coh(
+                  this->wave_function.psi_z, gx_0, gy_0, islice, w, output_multislice);
+            }
+          }
+
+					this->ext_iter++;
+					if(this->ext_stop_sim) break;
+				}
+
+				this->wave_function.set_m2psi_coh(output_multislice);
+        
+      }
+
+      template <typename Masker>
+      void add_ice_potential(
+          const int &islice, 
+          mt::Vector<FloatType, DeviceType> &V_0, 
+          const Masker &masker) {
+
+        // Create the random generator
+        std::default_random_engine gen;
+        gen.seed(islice);
+
+        // The size of the slice
+        double z_0 = this->wave_function.slicing.slice[islice].z_0;
+        double z_e = this->wave_function.slicing.slice[islice].z_e;
+
+        // Compute the mask
+        mt::Vector<bool, mt::e_host> mask;
+        mask.resize(V_0.size());
+        masker.compute(z_0, z_e, mask.begin());
+        
+        // The parameters to use
+        double alpha0 = 0.228667;
+        double alpha1 = -0.151448;
+        double theta0 = -0.040908;
+        double theta1 = 11.350992;
+        /* double A = 0.144726; */
+        /* double B = 0.11877; */
+        /* double S = 0.347067; */
+        double A = 0.102808;
+        double B = 0.011724;
+        double S = 0.415437;
+
+        // The slice thickness
+        double t = z_e - z_0;
+        double alpha = alpha0 * t + alpha1;
+        double theta = theta0 * t + theta1;
+        std::cout << islice << ": " << t << ", " << alpha << ", " << theta << std::endl;
+
+        // Compute the Gamma random field
+        mt::Vector<T_r, DeviceType> random_field;
+        random_field.resize(V_0.size());
+        generate_random_field(random_field, mask, A, B, S, alpha, theta, gen);
+
+        // Add the random field to the potential map
+        mt::add((*this->stream), random_field, V_0);
+      }
+
+      template <typename VectorFloat, typename VectorBool, typename Generator>
+      void generate_random_field(
+          VectorFloat &random_field, 
+          const VectorBool &mask, 
+          double A, 
+          double B, 
+          double S, 
+          double alpha, 
+          double theta,
+          Generator &gen) {
+
+        // The size of the data
+        std::size_t size = random_field.size();
+
+        // Create a uniform distribution random number generator
+        std::uniform_real_distribution<double> uniform(0, 2*3.14159);
+
+        mt::Vector<T_c, mt::e_host> fft_data;
+        mt::Vector<T_c, DeviceType> fft_data_dev;
+        fft_data.resize(size);
+        fft_data_dev.resize(size);
+        std::size_t xsize = this->input_multislice->grid_2d.nx;
+        std::size_t ysize = this->input_multislice->grid_2d.ny;
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            double distance = std::sqrt(
+                std::pow((i-xsize/2.0)/(xsize/2.0), 2)+
+                std::pow((j-ysize/2.0)/(ysize/2.0),2));
+            double power = A * std::exp(-0.5*std::pow(distance/S,2)) + B;
+            double amplitude = std::sqrt(power);
+            double phase = uniform(gen);
+            fft_data[i+j*xsize] = amplitude * std::exp(std::complex<double>(0, phase)); 
+          }
+        }
+        fft_data_dev.assign(fft_data.begin(), fft_data.end());
+        mt::fft2_shift(*(this->stream), this->input_multislice->grid_2d, fft_data_dev);
+        this->fft_2d->inverse(fft_data_dev);
+        
+        mt::assign_real(fft_data_dev, random_field);
+        
+        mt::Vector<FloatType, mt::e_host> random_field_host;
+        random_field_host.resize(size);
+        random_field_host.assign(random_field.begin(), random_field.end());
+
+        double mean = 0;
+        for(auto x : random_field_host) {
+          mean += x;
+        }
+        mean /= random_field_host.size();
+        double sdev = 0;
+        for (auto x : random_field_host) {
+          sdev += std::pow((x - mean), 2);
+        }
+        sdev = std::sqrt(sdev / random_field_host.size());
+        for (auto &x : random_field_host) {
+          x = (x - mean) / sdev;
+        }
+
+        std::vector<double> gx(1000);
+        std::vector<double> gy(1000);
+        for (std::size_t i = 0; i < gx.size(); ++i) {
+          gx[i] = (double)i / (double)gx.size();
+          gy[i] = boost::math::gamma_p_inv(alpha, gx[i]) * theta;
+        }
+
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            auto &x = random_field_host[i+j*xsize];
+            if (mask[i+j*xsize]) {
+              auto c = 0.5 * (1 + std::erf(x/std::sqrt(2)));
+
+              double g = 0;
+              int i = (std::size_t)std::floor(c * gx.size());
+              if (i < 0) {
+                g = gy[0];
+              } else if (i >= gx.size()-1) {
+                g = gy[gx.size()-1];
+              } else {
+                auto gx0 = gx[i];
+                auto gx1 = gx[i+1];
+                auto gy0 = gy[i];
+                auto gy1 = gy[i+1];
+                g = gy0 + (gy1 - gy0) / (gx1 - gx0) * (c - gx0);
+              }
+
+              x = g;
+            } else {
+              x = 0;
+            }
+          }
+        }
+
+        random_field.assign(random_field_host.begin(), random_field_host.end());
+        mt::fft2_shift(*(this->stream), this->input_multislice->grid_2d, random_field);
+      }
+    };
+
     /**
      * Run the multislice simulation
      * @param system_conf The system configuration
@@ -484,7 +735,7 @@ namespace multem {
         system_conf.nstream);
 
       // Setup the multislice simulation 
-      mt::Multislice<FloatType, DeviceType> multislice;
+      MultisliceExt<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
 
       // Set the input data
@@ -492,6 +743,55 @@ namespace multem {
 
       // Perform the multislice simulation
       multislice(output_multislice);
+      stream.synchronize();
+
+      // Get the results
+      output_multislice.gather();
+      output_multislice.clean_temporal();
+      fft_2d.cleanup();
+
+      // If there was an error then throw an exception
+      auto err = cudaGetLastError();
+      if (err != cudaSuccess) {
+        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      }
+    }
+    
+    /**
+     * Run the multislice simulation
+     * @param system_conf The system configuration
+     * @param input_multislice The input object
+     * @param output_multislice The output object
+     */
+    template <typename FloatType, mt::eDevice DeviceType, typename Masker>
+    void run_multislice_internal(
+      const mt::System_Configuration &system_conf,
+      mt::Input_Multislice<FloatType> &input_multislice,
+      mt::Output_Multislice<FloatType> &output_multislice,
+      const Masker &masker) {
+  
+      // Set the system configration    
+      input_multislice.system_conf = system_conf;
+
+      // Open a stream
+      mt::Stream<DeviceType> stream(system_conf.nstream);
+
+      // Create the FFT object
+      mt::FFT<FloatType, DeviceType> fft_2d;
+      fft_2d.create_plan_2d(
+        input_multislice.grid_2d.ny, 
+        input_multislice.grid_2d.nx, 
+        system_conf.nstream);
+
+      // Setup the multislice simulation 
+      MultisliceExt<FloatType, DeviceType> multislice;
+      multislice.set_input_data(&input_multislice, &stream, &fft_2d);
+
+      // Set the input data
+      output_multislice.set_input_data(&input_multislice);
+
+      // Perform the multislice simulation
+      multislice(output_multislice, masker);
       stream.synchronize();
 
       // Get the results
@@ -944,6 +1244,31 @@ namespace multem {
     // Return the output struct
     return detail::write_output_multislice(output_multislice);
   }
+  
+  /**
+   * Run the multislice simulation. 
+   * @param config The system configuration
+   * @param input The input object
+   * @returns The output results
+   */
+  template <typename FloatType, mt::eDevice DeviceType, typename Masker>
+  Output run_multislice(SystemConfiguration config, Input input, const Masker &masker) {
+
+    // Initialise the system configuration and input structures 
+    auto system_conf = detail::read_system_configuration(config);
+    auto input_multislice = detail::read_input_multislice<FloatType>(input);
+    input_multislice.system_conf = system_conf;
+
+    // Create the output structure
+    mt::Output_Multislice<FloatType> output_multislice;
+   
+    // Run the simulation 
+    detail::run_multislice_internal<FloatType, DeviceType, Masker>(
+      system_conf, input_multislice, output_multislice, masker);
+
+    // Return the output struct
+    return detail::write_output_multislice(output_multislice);
+  }
 
   Output simulate(SystemConfiguration config, Input input) {
     Output result;
@@ -962,6 +1287,25 @@ namespace multem {
     return result;
   }
 
+  Output simulate_with_ice_approximation(
+      SystemConfiguration config, 
+      Input input, 
+      const Masker &masker) {
+    Output result;
+    if (config.device == "host" && config.precision == "float") {
+      result = run_multislice<float, mt::e_host, Masker>(config, input, masker);
+    } else if (config.device == "host" && config.precision == "double") {
+      result = run_multislice<double, mt::e_host, Masker>(config, input, masker);
+    } else if (config.device == "device" && config.precision == "float") {
+      result = run_multislice<float, mt::e_device, Masker>(config, input, masker);
+    } else if (config.device == "device" && config.precision == "double") {
+      result = run_multislice<double, mt::e_device, Masker>(config, input, masker);
+    } else {
+      MULTEM_ASSERT(config.device == "host" || config.device == "device");
+      MULTEM_ASSERT(config.precision == "float" || config.precision == "double");
+    } 
+    return result;
+  }
 
   bool is_gpu_available() {
     return mt::is_gpu_available();

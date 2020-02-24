@@ -1205,6 +1205,15 @@ PYBIND11_MODULE(multem_ext, m)
     .def("asdict", &py::detail::Helpers<multem::Output>::asdict)
     ;
 
+  // Wrap the multem::Masker class
+  py::class_<multem::Masker>(m, "Masker")
+    .def(py::init<std::size_t, std::size_t>())
+    .def("set_shape", &multem::Masker::set_shape)
+    .def("set_cube", &multem::Masker::set_cube)
+    .def("set_cuboid", &multem::Masker::set_cuboid)
+    .def("set_cylinder", &multem::Masker::set_cylinder)
+    ;
+
   // Expose the simulation function
   //
   // Since this function takes a long time to run and pybind by default holds
@@ -1213,6 +1222,7 @@ PYBIND11_MODULE(multem_ext, m)
   // be an issue with dask parallism on the cluster
   m.def("simulate", &multem::simulate, py::call_guard<py::gil_scoped_release>());
   m.def("simulate", &py::detail::simulate_slices, py::call_guard<py::gil_scoped_release>());
+  m.def("simulate", &multem::simulate_with_ice_approximation, py::call_guard<py::gil_scoped_release>());
 
   // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);

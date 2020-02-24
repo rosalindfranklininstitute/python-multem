@@ -574,6 +574,116 @@ namespace multem {
 
   };
 
+  class Masker {
+  public:
+
+    enum Shape {
+      Cuboid,
+      Cylinder
+    };
+
+    Masker(std::size_t ysize, std::size_t xsize)
+      : xsize_(xsize),
+        ysize_(ysize),
+        shape_(Cuboid),
+        offset_({0, 0, 0}),
+        size_({0, 0, 0}) {
+      MULTEM_ASSERT(xsize > 0);
+      MULTEM_ASSERT(ysize > 0);
+    }
+
+    std::size_t xsize() const {
+      return xsize_;
+    }
+    
+    std::size_t ysize() const {
+      return ysize_;
+    }
+
+    void set_shape(std::string shape) {
+      if (shape == "Cube") {
+        shape_ = Cuboid;
+      } else if (shape == "Cuboid") {
+        shape_ = Cuboid;
+      } else if (shape == "Cylinder") {
+        shape_ = Cylinder;
+      }
+    }
+    
+    void set_cube(std::array<double,3> offset, double length) {
+      offset_ = offset;
+      size_[0] = length;
+      size_[1] = length;
+      size_[2] = length;
+    }
+    
+    void set_cuboid(std::array<double,3> offset, std::array<double,3> length) {
+      offset_ = offset;
+      size_ = length;
+    }
+
+    void set_cylinder(std::array<double, 3> offset, double length, double radius) {
+      offset_ = offset;
+      size_[0] = length;
+      size_[1] = radius;
+    }
+
+    template <typename Iterator>
+    void compute(double zs, double ze, Iterator iterator) const {
+      MULTEM_ASSERT(ze > zs);
+      if (shape_ == Cuboid) {
+        double x0 = offset_[0];
+        double y0 = offset_[1];
+        double z0 = offset_[2];
+        double x1 = x0 + size_[0];
+        double y1 = y0 + size_[1];
+        double z1 = z0 + size_[2];
+        if (zs < z1 && ze > z0) {
+          for (std::size_t j = 0; j < ysize_; ++j) {
+            for (std::size_t i = 0; i < xsize_; ++i) {
+              if (j >= y0 && j < y1 && i >= x0 && i <= x1) {
+                *iterator = true;
+              } else {
+                *iterator = false;
+              }
+              ++iterator;
+            }
+          }
+        }
+      } else if (shape_ == Cylinder) {
+        double x0 = offset_[0];
+        double y0 = offset_[1];
+        double z0 = offset_[2];
+        double x1 = x0 + size_[0];
+        double y1 = y0 + 2*size_[1];
+        double z1 = z0 + 2*size_[1];
+        double yc = (y0 + y1) / 2.0;
+        double zc = (z0 + z1) / 2.0;
+        double radius2 = size_[1]*size_[1];
+        if (zs < z1 && ze > z0) {
+          for (std::size_t j = 0; j < ysize_; ++j) {
+            for (std::size_t i = 0; i < xsize_; ++i) {
+              double r1 = (j-yc)*(j-yc)+(zs-zc)*(zs-zc);
+              double r2 = (j-yc)*(j-yc)+(ze-zc)*(ze-zc);
+              if (i >= x0 && i < x1 && std::min(r1, r2) < radius2) {
+                *iterator = true;
+              } else {
+                *iterator = false;
+              }
+              ++iterator;
+            }
+          }
+        }
+      }
+    }
+
+  protected:
+    std::size_t xsize_;
+    std::size_t ysize_;
+    Shape shape_;
+    std::array<double, 3> offset_;
+    std::array<double, 3> size_;
+  };
 
   /**
    * Run the simulation
@@ -582,6 +692,17 @@ namespace multem {
    * @returns The simulation results
    */
   Output simulate(SystemConfiguration config, Input input);
+  
+  /**
+   * Run the simulation
+   * @param config The system configuration
+   * @param input The input
+   * @returns The simulation results
+   */
+  Output simulate_with_ice_approximation(
+      SystemConfiguration config, 
+      Input input, 
+      const Masker &masker);
  
   /**
    * Run the simulation. This overload performs the simulation for a sample
