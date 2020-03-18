@@ -582,6 +582,13 @@ namespace multem {
       Cylinder
     };
 
+    Masker()
+      : xsize_(0),
+        ysize_(0),
+        shape_(Cuboid),
+        offset_({0, 0, 0}),
+        size_({0, 0, 0}) {}
+
     Masker(std::size_t ysize, std::size_t xsize)
       : xsize_(xsize),
         ysize_(ysize),
@@ -598,6 +605,25 @@ namespace multem {
     
     std::size_t ysize() const {
       return ysize_;
+    }
+
+    Shape shape() const {
+      return shape_;
+    }
+
+    const std::array<double, 3>& offset() const {
+      return offset_;
+    }
+
+    const std::array<double, 3>& size() const {
+      return size_;
+    }
+
+    void set_size(std::size_t ysize, std::size_t xsize) {
+      xsize_ = xsize;
+      ysize_ = ysize;
+      MULTEM_ASSERT(xsize > 0);
+      MULTEM_ASSERT(ysize > 0);
     }
 
     void set_shape(std::string shape) {
@@ -626,55 +652,6 @@ namespace multem {
       offset_ = offset;
       size_[0] = length;
       size_[1] = radius;
-    }
-
-    template <typename Iterator>
-    void compute(double zs, double ze, Iterator iterator) const {
-      MULTEM_ASSERT(ze > zs);
-      if (shape_ == Cuboid) {
-        double x0 = offset_[0];
-        double y0 = offset_[1];
-        double z0 = offset_[2];
-        double x1 = x0 + size_[0];
-        double y1 = y0 + size_[1];
-        double z1 = z0 + size_[2];
-        if (zs < z1 && ze > z0) {
-          for (std::size_t j = 0; j < ysize_; ++j) {
-            for (std::size_t i = 0; i < xsize_; ++i) {
-              if (j >= y0 && j < y1 && i >= x0 && i <= x1) {
-                *iterator = true;
-              } else {
-                *iterator = false;
-              }
-              ++iterator;
-            }
-          }
-        }
-      } else if (shape_ == Cylinder) {
-        double x0 = offset_[0];
-        double y0 = offset_[1];
-        double z0 = offset_[2];
-        double x1 = x0 + size_[0];
-        double y1 = y0 + 2*size_[1];
-        double z1 = z0 + 2*size_[1];
-        double yc = (y0 + y1) / 2.0;
-        double zc = (z0 + z1) / 2.0;
-        double radius2 = size_[1]*size_[1];
-        if (zs < z1 && ze > z0) {
-          for (std::size_t j = 0; j < ysize_; ++j) {
-            for (std::size_t i = 0; i < xsize_; ++i) {
-              double r1 = (j-yc)*(j-yc)+(zs-zc)*(zs-zc);
-              double r2 = (j-yc)*(j-yc)+(ze-zc)*(ze-zc);
-              if (i >= x0 && i < x1 && std::min(r1, r2) < radius2) {
-                *iterator = true;
-              } else {
-                *iterator = false;
-              }
-              ++iterator;
-            }
-          }
-        }
-      }
     }
 
   protected:

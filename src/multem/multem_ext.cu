@@ -462,27 +462,6 @@ namespace multem {
 
 
     /**
-     * Normalize the data
-     */
-    template <typename T>
-    struct Normalize {
-      
-      T mean;
-      T sdev;
-
-      Normalize(T m, T s)
-        : mean(m),
-          sdev(s) {}
-
-      template <typename U>
-      DEVICE_CALLABLE
-      U operator()(U x) const {
-          return (x - mean) / sdev;
-      }
-
-    };
-
-    /**
      * Compute the FT of the Gaussian Random Field
      */
     template <typename Generator, typename T>
@@ -516,7 +495,7 @@ namespace multem {
        * Compute the FT of the GRF at this index
        */
       DEVICE_CALLABLE
-      T operator()(size_t index) {
+      T operator()(size_t index) const {
         size_t j = index / xsize;
         size_t i = index - j * xsize;
 
@@ -524,33 +503,33 @@ namespace multem {
         thrust::uniform_real_distribution<float> uniform(0, 2*3.14159265359);
 
         // Initialise the random number generator
-        gen.discard(index);
+        Generator rnd = gen;
+        rnd.discard(index);
 
         // Compute the power spectrum and phase
-        float distance = sqrt(
-            pow((i-xsize/2.0)/(xsize/2.0), 2)+
-            pow((j-ysize/2.0)/(ysize/2.0), 2));
-        float power = A * exp(-0.5*pow(distance/S,2)) + B;
+        float xd = (i-xsize/2.0)/(xsize/2.0);
+        float yd = (j-ysize/2.0)/(ysize/2.0);
+        float power = A * exp(-0.5*(xd*xd + yd*yd) / (S*S)) + B;
         float amplitude = sqrt(power);
-        float phase = uniform(gen);
+        float phase = uniform(rnd);
         return amplitude * exp(T(0, phase)); 
       }
     };
 
     /**
-     * Convery the Gaussian variable into a Gamma variable
+     * Convert the Gaussian variable into a Gamma variable
      */
     template <typename T>
     struct GaussianToGamma {
 
-      T *gx;
-      T *gy;
+      const T *gx;
+      const T *gy;
       size_t size;
 
       /**
        * Initialise
        */
-      GaussianToGamma(T *gx_, T *gy_, size_t size_)
+      GaussianToGamma(const T *gx_, const T *gy_, size_t size_)
         : gx(gx_),
           gy(gy_),
           size(size_) {
@@ -563,9 +542,9 @@ namespace multem {
        */
       template <typename U, typename V>
       DEVICE_CALLABLE
-      U operator()(U x, V m) {
-        U c = 0.5 * (1 + erf(x/sqrt(2)));
-        size_t i = (size_t)min(max(floor(c * size),(U)0), (U)(size-2));
+      U operator()(U x, V m) const {
+        U c = 0.5 * (1 + erf(x/sqrt(2.0f)));
+        size_t i = (size_t)min(max(floor(x * size),(U)0), (U)(size-2));
         U gx0 = gx[i];
         U gx1 = gx[i+1];
         U gy0 = gy[i];
@@ -577,12 +556,61 @@ namespace multem {
     };
 
 
+    template <typename Iterator>
+    void compute(const Masker &masker, double zs, double ze, Iterator iterator) {
+      MULTEM_ASSERT(ze > zs);
+      if (masker.shape() == Masker::Cuboid) {
+        double x0 = masker.offset()[0];
+        double y0 = masker.offset()[1];
+        double z0 = masker.offset()[2];
+        double x1 = x0 + masker.size()[0];
+        double y1 = y0 + masker.size()[1];
+        double z1 = z0 + masker.size()[2];
+        if (zs < z1 && ze > z0) {
+          for (std::size_t j = 0; j < masker.ysize(); ++j) {
+            for (std::size_t i = 0; i < masker.xsize(); ++i) {
+              if (j >= y0 && j < y1 && i >= x0 && i <= x1) {
+                *iterator = true;
+              } else {
+                *iterator = false;
+              }
+              ++iterator;
+            }
+          }
+        }
+      } else if (masker.shape() == Masker::Cylinder) {
+        double x0 = masker.offset()[0];
+        double y0 = masker.offset()[1];
+        double z0 = masker.offset()[2];
+        double x1 = x0 + masker.size()[0];
+        double y1 = y0 + 2*masker.size()[1];
+        double z1 = z0 + 2*masker.size()[1];
+        double yc = (y0 + y1) / 2.0;
+        double zc = (z0 + z1) / 2.0;
+        double radius2 = masker.size()[1]*masker.size()[1];
+        if (zs < z1 && ze > z0) {
+          for (std::size_t j = 0; j < masker.ysize(); ++j) {
+            for (std::size_t i = 0; i < masker.xsize(); ++i) {
+              double r1 = (j-yc)*(j-yc)+(zs-zc)*(zs-zc);
+              double r2 = (j-yc)*(j-yc)+(ze-zc)*(ze-zc);
+              if (i >= x0 && i < x1 && std::min(r1, r2) < radius2) {
+                *iterator = true;
+              } else {
+                *iterator = false;
+              }
+              ++iterator;
+            }
+          }
+        }
+      }
+    }
+
     /**
      * Compute an approximation of the ice potential in a slice by modelling as
      * a Gamma distribution with a certain power spectrum
      */
     template <typename FloatType, mt::eDevice DeviceType>
-    class IcePotentialApproximation {
+    class IcePotentialApproximation : public mt::PotentialFunction<FloatType, DeviceType> {
     public:
 			
       using T_r = FloatType;
@@ -597,11 +625,17 @@ namespace multem {
       double B_;
       double S_;
       mt::Grid_2d<FloatType> grid_2d_;
-
+      mt::Vector<T_c, DeviceType> fft_data_;
+      bool fft_data_use_real_;
+      mt::Vector<T_r, DeviceType> random_field_;
+      mt::Vector<bool, DeviceType> mask_;
+      mt::FFT<T_r, DeviceType> *fft_2d_;
+      Masker masker_;
+      
       /**
        * Initialise
        */
-      IcePotentialApproximation(mt::Grid_2d<FloatType> grid_2d)
+      IcePotentialApproximation()
         : gen_(std::random_device()()),
           alpha0_(0.228667),
           alpha1_(-0.151448),
@@ -610,68 +644,161 @@ namespace multem {
           A_(0.102808),
           B_(0.011724),
           S_(0.415437),
-          grid_2d_(grid_2d) {}
+          fft_data_use_real_(true),
+          fft_2d_(NULL) {}
+
+      /**
+       * Get the masker
+       */
+      const Masker& masker() const {
+        return masker_;
+      }
+
+      /**
+       * Get the masker
+       */
+      Masker& masker() {
+        return masker_;
+      }
+
+      /**
+       * Set the masker
+       */
+      void set_masker(const Masker &masker) {
+        masker_ = masker;
+      }
+
+      /**
+       * Set the power spectrum parameters
+       */
+      void set_power_spectrum_parameters(double A, double B, double S) {
+        MULTEM_ASSERT(A > 0);
+        MULTEM_ASSERT(B >= 0);
+        MULTEM_ASSERT(S > 0);
+        A_ = A;
+        B_ = B;
+        S_ = S;
+        fft_data_use_real_ = true;
+      }
+      
+      /**
+       * Set the gamma parameters
+       */
+      void set_gamma_parameters(
+          double alpha0, 
+          double alpha1, 
+          double theta0, 
+          double theta1) {
+        MULTEM_ASSERT(alpha0_ >= 0);
+        MULTEM_ASSERT(alpha1_ >= 0);
+        MULTEM_ASSERT(theta0_ >= 0);
+        MULTEM_ASSERT(theta1_ >= 0);
+        alpha0_ = alpha0;
+        alpha1_ = alpha1;
+        theta0_ = theta0;
+        theta1_ = theta1;
+      }
+
+      /**
+       * Set the grid size
+       */
+      void set_grid(mt::Grid_2d<FloatType> grid_2d) {
+
+        // If we set the grid then resize everything
+        if (grid_2d.nx != grid_2d_.nx || grid_2d.ny != grid_2d_.ny) {
+          grid_2d_ = grid_2d,
+          fft_data_.resize(grid_2d.nx * grid_2d.ny);
+          random_field_.resize(grid_2d.nx * grid_2d.ny);
+          mask_.resize(grid_2d.nx * grid_2d.ny);
+          masker_.set_size(grid_2d.ny, grid_2d.nx);
+          fft_data_use_real_ = true;
+        }
+      }
+      
+      /**
+       * Set the FFT instance
+       */
+      void set_fft_2d(mt::FFT<T_r, DeviceType> *fft_2d) {
+        fft_2d_ = fft_2d;
+      }
+
+      /**
+       * Compute the mask
+       */
+      void compute_mask(double z_0, double z_e) {
+        MULTEM_ASSERT(masker_.xsize() == grid_2d_.nx);
+        MULTEM_ASSERT(masker_.ysize() == grid_2d_.ny);
+        MULTEM_ASSERT(masker_.xsize() * masker_.ysize() == mask_.size());
+        compute(masker_, z_0, z_e, mask_.begin());
+       // /* mt::Vector<bool, mt::e_host> mask_host; */
+        /* mask_host.resize(mask_.size()); */
+        //mask_.assign(mask_host.begin(), mask_host.end());
+      }
+
+      /**
+       * Compute a gaussian random field
+       */
+      void compute_gaussian_random_field() {
+
+        // We get two random fields for one calculation so we either use the
+        // real or imaginary component 
+        if (fft_data_use_real_) {
+         
+          // The data size
+          std::size_t xsize = grid_2d_.nx;
+          std::size_t ysize = grid_2d_.ny;
+          std::size_t size = xsize*ysize;
+
+          // Compute the Fourier transform of the Gaussian Random Field
+          thrust::counting_iterator<size_t> indices(0);
+          thrust::transform(
+              indices,
+              indices + size,
+              fft_data_.begin(),
+              ComputeGaussianRandomField<thrust::default_random_engine, T_c>(
+                gen_, 
+                A_, 
+                B_, 
+                S_, 
+                xsize, 
+                ysize));
+          gen_.discard(size);
+
+          // Shift the FFT and then invert
+          mt::fft2_shift(grid_2d_, fft_data_);
+          fft_data_[0] = 0;
+          fft_2d_->inverse(fft_data_);
+
+          // Extract the real component
+          mt::assign_real(fft_data_, random_field_);
+
+        } else {
+          
+          // Extract the imag component
+          mt::assign_imag(fft_data_, random_field_);
+        }
+
+        // Compute the variance
+        T_r variance = thrust::transform_reduce(
+            random_field_.begin(),
+            random_field_.end(), 
+            mt::functor::square_dif<T_r, T_r>(0), 
+            T_r(0), 
+            mt::functor::add<T_r>()) / random_field_.size();
+        
+        // Normalize by the variance
+        mt::scale(1.0 / std::sqrt(variance), random_field_);
+
+        // Toggle real/imag
+        fft_data_use_real_ = !fft_data_use_real_;
+      }
 
       /**
        * Compute the Gamma random field and add to input potential
        */
-      template <typename Stream, typename FFT_2d>
-      void operator()(
-          Stream &stream,
-          FFT_2d *fft_2d,
-          double thickness,
-          mt::Vector<FloatType, DeviceType> &V_0,
-          mt::Vector<bool, DeviceType> &mask) {
-
-        // Check the sizes
-        std::size_t xsize = grid_2d_.nx;
-        std::size_t ysize = grid_2d_.ny;
-        std::size_t size = xsize*ysize;
-        MULTEM_ASSERT(thickness > 0);
-        MULTEM_ASSERT(V_0.size() == size);
-        MULTEM_ASSERT(mask.size() == size);
-
-        // The slice thickness
-        double alpha = alpha0_ * thickness + alpha1_;
-        double theta = theta0_ * thickness + theta1_;
-
-        // Initialise some arrays
-        mt::Vector<T_r, DeviceType> random_field(size);
-        mt::Vector<T_c, DeviceType> fft_data(size);
-
-        // Compute the Fourier transform of the Gaussian Random Field
-        thrust::counting_iterator<size_t> indices(0);
-        thrust::transform(
-            indices,
-            indices + size,
-            fft_data.begin(),
-            ComputeGaussianRandomField<thrust::default_random_engine, T_c>(
-              gen_, 
-              A_, 
-              B_, 
-              S_, 
-              xsize, 
-              ysize));
-        gen_.discard(size);
-
-        // Shift the FFT and then invert
-        mt::fft2_shift(stream, grid_2d_, fft_data);
-        fft_2d->inverse(fft_data);
-
-        // Extract the real component
-        mt::assign_real(fft_data, random_field);
-
-        // Compute the mean and variance
-        T_r mean = 0;
-        T_r variance = 0;
-        mt::mean_var(random_field, mean, variance);
-
-        // Normalize by the mean and variance
-        thrust::transform(
-            random_field.begin(),
-            random_field.end(),
-            random_field.begin(),
-            Normalize<T_r>(mean, std::sqrt(variance)));
+      void compute_gamma_random_field(
+          double alpha,
+          double theta) {
 
         // Compute the lookup table for the quantile function of the Gamma distribution
         const size_t N_LOOKUP = 1000;
@@ -688,315 +815,60 @@ namespace multem {
 
         // Transform the Normal distribution into a Gamma distribution
         thrust::transform(
-            random_field.begin(), 
-            random_field.end(), 
-            mask.begin(),
-            random_field.begin(), 
+            random_field_.begin(), 
+            random_field_.end(), 
+            mask_.begin(),
+            random_field_.begin(), 
             GaussianToGamma<T_r>(
               thrust::raw_pointer_cast(gx_dev.data()),
               thrust::raw_pointer_cast(gy_dev.data()),
               gx.size())); 
 
         // Shift the grid
-        mt::fft2_shift(stream, grid_2d_, random_field);
-
-        // Add the random field to the potential map
-        mt::add(stream, random_field, V_0);
-      }
-    };
-    
-    /**
-     * Extented multi slice class with additional methods
-     */
-    template <typename FloatType, mt::eDevice DeviceType>
-    class MultisliceExt : public mt::Multislice<FloatType, DeviceType> {
-    public:
-
-			using T_r = FloatType;
-			using T_c = complex<FloatType>;
-      using multislice_type = mt::Multislice<FloatType, DeviceType>;
-
-      template <typename TOutput_multislice>
-      void operator()(TOutput_multislice &output_multislice) {
-        multislice_type::operator()(output_multislice);
+        mt::fft2_shift(grid_2d_, random_field_);
       }
 
-      template <typename TOutput_multislice, typename Masker>
-      void operator()(TOutput_multislice &output_multislice, const Masker &masker) {
-
-        this->ext_niter = this->input_multislice->number_conf();
-        this->ext_iter = 0;
-
-				T_r w = this->input_multislice->get_phonon_rot_weight();
-
-				output_multislice.init();
-
-				for(auto iconf = this->input_multislice->fp_iconf_0; 
-            iconf <= this->input_multislice->pn_nconf; iconf++)
-				{
-					this->wave_function.move_atoms(iconf);
-
-					this->wave_function.set_incident_wave(this->wave_function.psi_z);
-
-          // Overriding behaviour of:
-					// wave_function.psi(w, wave_function.psi_z, output_multislice);
-          {
-            T_r gx_0 = this->wave_function.input_multislice->gx_0();
-            T_r gy_0 = this->wave_function.input_multislice->gy_0();
-
-            for(auto islice = 0; islice < this->wave_function.slicing.slice.size(); islice++)
-            {
-              // Overriding behaviour of:
-              //this->wave_function.psi_slice(gx_0, gy_0, islice, this->wave_function.psi_z);
-              {
-                //Overriding behaviour of:
-                //this->transmit(islice, this->wave_function.psi_z);
-                {
-                  // Overriding behaviour of:
-                  //this->wave_function->trans(islice, this->wave_function.trans_0);
-                  /* void trans(const int &islice, Vector<T_c, dev> &trans_0) */
-                  {
-                    if(islice < this->wave_function.memory_slice.n_slice_cur(
-                          this->wave_function.slicing.slice.size()))
-                    {
-                      if(this->wave_function.memory_slice.is_potential())
-                      {
-                        this->wave_function.trans(
-                            this->wave_function.input_multislice->Vr_factor(), 
-                            this->wave_function.Vp_v[islice], 
-                            this->wave_function.trans_0);
-                      }
-                      else if(this->wave_function.memory_slice.is_transmission())
-                      {
-                        mt::assign(this->wave_function.trans_v[islice], 
-                            this->wave_function.trans_0);
-                      }
-                    }
-                    else
-                    {
-					            //Projected_Potential<T, dev>::operator()(islice, this->V_0);
-                      this->wave_function(islice, this->wave_function.V_0);
-
-                      /**
-                       * Add the ice potential (the purpose of this function)
-                       */
-                      add_ice_potential(islice, this->wave_function.V_0, masker);
-
-                      this->wave_function.trans(this->input_multislice->Vr_factor(), 
-                          this->wave_function.V_0, this->wave_function.trans_0);
-                    }
-                  }
-                  
-                  mt::multiply(*(this->wave_function.stream), 
-                      this->wave_function.trans_0, this->wave_function.psi_z);
-                }
-
-                if(this->wave_function.input_multislice->is_multislice())
-                {
-                  this->wave_function.propagator(mt::eS_Real, gx_0, gy_0, 
-                      this->wave_function.dz(islice), this->wave_function.psi_z);
-                }
-              }
-
-              this->wave_function.set_m2psi_tot_psi_coh(
-                  this->wave_function.psi_z, gx_0, gy_0, islice, w, output_multislice);
-            }
-          }
-
-					this->ext_iter++;
-					if(this->ext_stop_sim) break;
-				}
-
-				this->wave_function.set_m2psi_coh(output_multislice);
+      /**
+       * Compute the Gamma random field and add to input potential
+       */
+      void operator()(
+          double z_0,
+          double z_e,
+          mt::Vector<FloatType, DeviceType> &V_0) {
         
-      }
+        std::cout << z_0 << ", " << z_e << ", " << (z_e-z_0) << std::endl;
 
-      template <typename Masker>
-      void add_ice_potential(
-          const int &islice, 
-          mt::Vector<FloatType, DeviceType> &V_0, 
-          const Masker &masker) {
+        // Check the sizes
+        MULTEM_ASSERT(z_0 < z_e);
+        MULTEM_ASSERT(grid_2d_.nx > 0 && grid_2d_.ny > 0);
+        MULTEM_ASSERT(fft_2d_ != NULL);
+        MULTEM_ASSERT(V_0.size() == random_field_.size());
+        MULTEM_ASSERT(mask_.size() == random_field_.size());
 
-        // Create the random generator
-        std::random_device rd;
-        thrust::default_random_engine gen(rd());
-
-        // The size of the slice
-        double z_0 = this->wave_function.slicing.slice[islice].z_0;
-        double z_e = this->wave_function.slicing.slice[islice].z_e;
+        // The gamma parameters given the slice slice thickness
+        double thickness = (z_e - z_0);
+        double alpha = alpha0_ * thickness + alpha1_;
+        double theta = theta0_ * thickness + theta1_;
 
         // Compute the mask
-        mt::Vector<bool, mt::e_host> mask;
-        mt::Vector<bool, DeviceType> mask_dev;
-        mask_dev.resize(V_0.size());
-        mask.resize(V_0.size());
-        masker.compute(z_0, z_e, mask.begin());
-        mask_dev.assign(mask.begin(), mask.end());
+        compute_mask(z_0, z_e);
 
-        std::cout << islice << ": " << (z_e-z_0) << std::endl;
-        IcePotentialApproximation<FloatType, DeviceType> ice(this->input_multislice->grid_2d);
-        ice(*(this->stream), this->fft_2d, z_e-z_0, V_0, mask_dev);
+        // Compute the Fourier transform of the Gaussian Random Field
+        compute_gaussian_random_field();
 
+        // Convert the gaussian random field into a gamma field
+        compute_gamma_random_field(alpha, theta);
 
-        /* // The parameters to use */
-        /* double alpha0 = 0.228667; */
-        /* double alpha1 = -0.151448; */
-        /* double theta0 = -0.040908; */
-        /* double theta1 = 11.350992; */
-        /* /1* double A = 0.144726; *1/ */
-        /* /1* double B = 0.11877; *1/ */
-        /* /1* double S = 0.347067; *1/ */
-        /* double A = 0.102808; */
-        /* double B = 0.011724; */
-        /* double S = 0.415437; */
-
-        /* // The slice thickness */
-        /* double t = z_e - z_0; */
-        /* double alpha = alpha0 * t + alpha1; */
-        /* double theta = theta0 * t + theta1; */
-        /* std::cout << islice << ": " << t << ", " << alpha << ", " << theta << std::endl; */
-
-        /* // Compute the Gamma random field */
-        /* mt::Vector<T_r, DeviceType> random_field; */
-        /* random_field.resize(V_0.size()); */
-        /* generate_random_field(random_field, mask_dev, A, B, S, alpha, theta, gen); */
-        /* gen.discard(V_0.size()); */
-
-        /* // Add the random field to the potential map */
-        /* mt::add((*this->stream), random_field, V_0); */
+        // Add the random field to the potential map
+        thrust::transform(
+            random_field_.begin(), 
+            random_field_.end(),
+            V_0.begin(),
+            V_0.begin(), 
+            mt::functor::add<T_r>());
       }
-
-      /* template <typename VectorFloat, typename VectorBool, typename Generator> */
-      /* void generate_random_field( */
-      /*     VectorFloat &random_field, */ 
-      /*     const VectorBool &mask, */ 
-      /*     double A, */ 
-      /*     double B, */ 
-      /*     double S, */ 
-      /*     double alpha, */ 
-      /*     double theta, */
-      /*     Generator &gen) { */
-
-      /*   // The size of the data */
-      /*   std::size_t size = random_field.size(); */
-
-      /*   std::size_t xsize = this->input_multislice->grid_2d.nx; */
-      /*   std::size_t ysize = this->input_multislice->grid_2d.ny; */
-
-      /*   mt::Vector<T_c, DeviceType> fft_data_dev; */
-      /*   fft_data_dev.resize(size); */
-
-      /*   /1* mt::Vector<T_c, mt::e_host> fft_data; *1/ */
-      /*   /1* fft_data.resize(size); *1/ */
-      /*   /1* thrust::uniform_real_distribution<double> uniform(0, 2*3.14159); *1/ */
-      /*   /1* for (std::size_t j = 0; j < ysize; ++j) { *1/ */
-      /*   /1*   for (std::size_t i = 0; i < xsize; ++i) { *1/ */
-      /*   /1*     double distance = std::sqrt( *1/ */
-      /*   /1*         std::pow((i-xsize/2.0)/(xsize/2.0), 2)+ *1/ */
-      /*   /1*         std::pow((j-ysize/2.0)/(ysize/2.0),2)); *1/ */
-      /*   /1*     double power = A * std::exp(-0.5*std::pow(distance/S,2)) + B; *1/ */
-      /*   /1*     double amplitude = std::sqrt(power); *1/ */
-      /*   /1*     double phase = uniform(gen); *1/ */
-      /*   /1*     fft_data[i+j*xsize] = amplitude * std::exp(std::complex<double>(0, phase)); *1/ */ 
-      /*   /1*   } *1/ */
-      /*   /1* } *1/ */
-      /*   /1* fft_data_dev.assign(fft_data.begin(), fft_data.end()); *1/ */
-
-
-      /*   thrust::counting_iterator<size_t> indices(0); */
-      /*   thrust::transform( */
-      /*       indices, */
-      /*       indices+fft_data_dev.size(), */
-      /*       fft_data_dev.begin(), */
-      /*       ComputeFFT<Generator, T_c>(gen, A, B, S, xsize, ysize)); */
-
-      /*   mt::fft2_shift(*(this->stream), this->input_multislice->grid_2d, fft_data_dev); */
-      /*   this->fft_2d->inverse(fft_data_dev); */
-        
-      /*   mt::assign_real(fft_data_dev, random_field); */
-
-      /*   T_r mean = 0; */
-      /*   T_r variance = 0; */
-      /*   mt::mean_var(random_field, mean, variance); */
-
-      /*   thrust::transform( */
-      /*       random_field.begin(), */
-      /*       random_field.end(), */
-      /*       random_field.begin(), */
-      /*       Normalize(mean, std::sqrt(variance))); */
-
-      /*   /1* mt::Vector<FloatType, mt::e_host> random_field_host; *1/ */
-      /*   /1* random_field_host.resize(size); *1/ */
-      /*   /1* random_field_host.assign(random_field.begin(), random_field.end()); *1/ */
-
-      /*   /1* double mean = 0; *1/ */
-      /*   /1* for(auto x : random_field_host) { *1/ */
-      /*   /1*   mean += x; *1/ */
-      /*   /1* } *1/ */
-      /*   /1* mean /= random_field_host.size(); *1/ */
-      /*   /1* double sdev = 0; *1/ */
-      /*   /1* for (auto x : random_field_host) { *1/ */
-      /*   /1*   sdev += std::pow((x - mean), 2); *1/ */
-      /*   /1* } *1/ */
-      /*   /1* sdev = std::sqrt(sdev / random_field_host.size()); *1/ */
-      /*   /1* for (auto &x : random_field_host) { *1/ */
-      /*   /1*   x = (x - mean) / sdev; *1/ */
-      /*   /1* } *1/ */
-      /*   /1* random_field.assign(random_field_host.begin(), random_field_host.end()); *1/ */
-
-      /*   mt::Vector<T_r, mt::e_host> gx(1000); */
-      /*   mt::Vector<T_r, mt::e_host> gy(1000); */
-      /*   for (std::size_t i = 0; i < gx.size(); ++i) { */
-      /*     gx[i] = (double)i / (double)gx.size(); */
-      /*     gy[i] = boost::math::gamma_p_inv(alpha, gx[i]) * theta; */
-      /*   } */
-
-      /*   mt::Vector<T_r, DeviceType> gx_dev(gx.size()); */
-      /*   mt::Vector<T_r, DeviceType> gy_dev(gy.size()); */
-      /*   gx_dev.assign(gx.begin(), gx.end()); */
-      /*   gy_dev.assign(gy.begin(), gy.end()); */
-
-      /*   thrust::transform( */
-      /*       random_field.begin(), */ 
-      /*       random_field.end(), */ 
-      /*       mask.begin(), */
-      /*       random_field.begin(), */ 
-      /*       TestFunctor<T_r>( */
-      /*         thrust::raw_pointer_cast(gx_dev.data()), */
-      /*         thrust::raw_pointer_cast(gy_dev.data()), */
-      /*         gx.size())); */ 
-
-      /*   /1* for (std::size_t j = 0; j < ysize; ++j) { *1/ */
-      /*   /1*   for (std::size_t i = 0; i < xsize; ++i) { *1/ */
-      /*   /1*     auto &x = random_field_host[i+j*xsize]; *1/ */
-      /*   /1*     if (mask[j+i*ysize]) { *1/ */
-      /*   /1*       auto c = 0.5 * (1 + std::erf(x/std::sqrt(2))); *1/ */
-
-      /*   /1*       double g = 0; *1/ */
-      /*   /1*       int i = (std::size_t)std::floor(c * gx.size()); *1/ */
-      /*   /1*       if (i < 0) { *1/ */
-      /*   /1*         g = gy[0]; *1/ */
-      /*   /1*       } else if (i >= gx.size()-1) { *1/ */
-      /*   /1*         g = gy[gx.size()-1]; *1/ */
-      /*   /1*       } else { *1/ */
-      /*   /1*         auto gx0 = gx[i]; *1/ */
-      /*   /1*         auto gx1 = gx[i+1]; *1/ */
-      /*   /1*         auto gy0 = gy[i]; *1/ */
-      /*   /1*         auto gy1 = gy[i+1]; *1/ */
-      /*   /1*         g = gy0 + (gy1 - gy0) / (gx1 - gx0) * (c - gx0); *1/ */
-      /*   /1*       } *1/ */
-
-      /*   /1*       x = g; *1/ */
-      /*   /1*     } else { *1/ */
-      /*   /1*       x = 0; *1/ */
-      /*   /1*     } *1/ */
-      /*   /1*   } *1/ */
-      /*   /1* } *1/ */
-
-      /*   //random_field.assign(random_field_host.begin(), random_field_host.end()); */
-      /*   mt::fft2_shift(*(this->stream), this->input_multislice->grid_2d, random_field); */
-      /* } */
     };
+   
 
     /**
      * Run the multislice simulation
@@ -1024,7 +896,7 @@ namespace multem {
         system_conf.nstream);
 
       // Setup the multislice simulation 
-      MultisliceExt<FloatType, DeviceType> multislice;
+      mt::Multislice<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
 
       // Set the input data
@@ -1073,14 +945,21 @@ namespace multem {
         system_conf.nstream);
 
       // Setup the multislice simulation 
-      MultisliceExt<FloatType, DeviceType> multislice;
+      mt::Multislice<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
+     
+      // Setup the ice potential approximation
+      IcePotentialApproximation<FloatType, DeviceType> potential_function;
+      potential_function.set_fft_2d(&fft_2d);
+      potential_function.set_grid(input_multislice.grid_2d);
+      potential_function.set_masker(masker);
+      multislice.set_potential_function(&potential_function);
 
       // Set the input data
       output_multislice.set_input_data(&input_multislice);
 
       // Perform the multislice simulation
-      multislice(output_multislice, masker);
+      multislice(output_multislice);
       stream.synchronize();
 
       // Get the results
