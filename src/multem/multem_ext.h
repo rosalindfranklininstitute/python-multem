@@ -44,6 +44,24 @@ namespace multem {
           occupancy(0),
           region(0),
           charge(0) {}
+
+      Atom(
+            int element_, 
+            double x_, 
+            double y_, 
+            double z_, 
+            double sigma_, 
+            double occupancy_, 
+            int region_, 
+            int charge_)
+        : element(element_),
+          x(x_),
+          y(y_),
+          z(z_),
+          sigma(sigma_),
+          occupancy(occupancy_),
+          region(region_),
+          charge(charge_) {}
   };
 
   /**
@@ -619,6 +637,14 @@ namespace multem {
       return size_;
     }
 
+    double zmin() const {
+      return offset_[2];
+    }
+
+    double zmax() const {
+      return offset_[2] + size_[2];
+    }
+
     void set_size(std::size_t ysize, std::size_t xsize) {
       xsize_ = xsize;
       ysize_ = ysize;
@@ -635,7 +661,7 @@ namespace multem {
         shape_ = Cylinder;
       }
     }
-    
+
     void set_cube(std::array<double,3> offset, double length) {
       offset_ = offset;
       size_[0] = length;
@@ -651,7 +677,8 @@ namespace multem {
     void set_cylinder(std::array<double, 3> offset, double length, double radius) {
       offset_ = offset;
       size_[0] = length;
-      size_[1] = radius;
+      size_[1] = radius*2;
+      size_[2] = radius*2;
     }
 
   protected:
@@ -842,6 +869,11 @@ namespace multem {
   double iehwgd_to_sigma(double value);
 
   std::vector<Atom> crystal_by_layers(const CrystalParameters &params);
+
+  /**
+   * Tests
+   */
+  void test_ice_potential_approximation();
 }
 
 #endif

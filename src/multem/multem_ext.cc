@@ -1232,4 +1232,8 @@ PYBIND11_MODULE(multem_ext, m)
   m.def("iehwgd_to_sigma", &multem::iehwgd_to_sigma);
 
   m.def("crystal_by_layers", &multem::crystal_by_layers);
+
+  // Expose some tests
+  m.def("test_ice_potential_approximation", &multem::test_ice_potential_approximation);
 }
+
