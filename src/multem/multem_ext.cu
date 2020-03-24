@@ -500,7 +500,7 @@ namespace multem {
         size_t i = index - j * xsize;
 
         // The uniform distribution
-        thrust::uniform_real_distribution<double> uniform(0, 2*3.14159265359);
+        thrust::uniform_real_distribution<double> uniform(0, 2*M_PI);
 
         // Initialise the random number generator
         Generator rnd = gen;
@@ -553,55 +553,6 @@ namespace multem {
 
     };
 
-
-    template <typename Iterator>
-    void compute(const Masker &masker, double zs, double ze, Iterator iterator) {
-      MULTEM_ASSERT(ze > zs);
-      if (masker.shape() == Masker::Cuboid) {
-        double x0 = masker.offset()[0];
-        double y0 = masker.offset()[1];
-        double z0 = masker.offset()[2];
-        double x1 = x0 + masker.size()[0];
-        double y1 = y0 + masker.size()[1];
-        double z1 = z0 + masker.size()[2];
-        if (zs < z1 && ze > z0) {
-          for (std::size_t j = 0; j < masker.ysize(); ++j) {
-            for (std::size_t i = 0; i < masker.xsize(); ++i) {
-              if (j >= y0 && j < y1 && i >= x0 && i <= x1) {
-                *iterator = true;
-              } else {
-                *iterator = false;
-              }
-              ++iterator;
-            }
-          }
-        }
-      } else if (masker.shape() == Masker::Cylinder) {
-        double x0 = masker.offset()[0];
-        double y0 = masker.offset()[1];
-        double z0 = masker.offset()[2];
-        double x1 = x0 + masker.size()[0];
-        double y1 = y0 + masker.size()[1];
-        double z1 = z0 + masker.size()[2];
-        double yc = (y0 + y1) / 2.0;
-        double zc = (z0 + z1) / 2.0;
-        double radius2 = masker.size()[1]*masker.size()[1]/4.0;
-        if (zs < z1 && ze > z0) {
-          for (std::size_t j = 0; j < masker.ysize(); ++j) {
-            for (std::size_t i = 0; i < masker.xsize(); ++i) {
-              double r1 = (j-yc)*(j-yc)+(zs-zc)*(zs-zc);
-              double r2 = (j-yc)*(j-yc)+(ze-zc)*(ze-zc);
-              if (i >= x0 && i < x1 && std::min(r1, r2) < radius2) {
-                *iterator = true;
-              } else {
-                *iterator = false;
-              }
-              ++iterator;
-            }
-          }
-        }
-      }
-    }
 
     /**
      * Compute an approximation of the ice potential in a slice by modelling as
@@ -715,7 +666,6 @@ namespace multem {
           fft_data_.resize(grid_2d.nx * grid_2d.ny);
           random_field_.resize(grid_2d.nx * grid_2d.ny);
           mask_.resize(grid_2d.nx * grid_2d.ny);
-          masker_.set_size(grid_2d.ny, grid_2d.nx);
           fft_data_use_real_ = true;
         }
       }
@@ -740,7 +690,7 @@ namespace multem {
         // Create host vector and then compute mask and copy
         mt::Vector<bool, mt::e_host> mask_host;
         mask_host.resize(mask_.size());
-        compute(masker_, z_0, z_e, mask_host.begin());
+        masker_.compute(z_0, z_e, mask_host.begin());
         mask_.assign(mask_host.begin(), mask_host.end());
       }
 
@@ -1553,6 +1503,10 @@ namespace multem {
     return result;
   }
 
+
+  /**
+   * Test to ensure that ice potential approximation gives correct results
+   */
   template <typename FloatType, mt::eDevice DeviceType>
   void test_ice_potential_approximation_internal() {
 
@@ -1564,8 +1518,7 @@ namespace multem {
     fft_2d.create_plan_2d(grid_2d.ny, grid_2d.nx, 1);
 
     // Create the masker
-    Masker masker(grid_2d.nx, grid_2d.ny);
-    masker.set_shape("Cube");
+    Masker masker(grid_2d.nx, grid_2d.ny, 1.0);
     masker.set_cube({0,0,0}, 1000);
 
     // Create the random generator
@@ -1594,7 +1547,7 @@ namespace multem {
       // Compute the mask
       mt::Vector<bool, mt::e_host> mask;
       mask.resize(V0.size());
-      multem::detail::compute(masker, z_0, z_e, mask.begin());
+      masker.compute(z_0, z_e, mask.begin());
       
       // The parameters to use
       double alpha0 = 0.228667;
@@ -1621,7 +1574,7 @@ namespace multem {
       std::size_t size = random_field.size();
 
       // Create a uniform distribution random number generator
-      thrust::uniform_real_distribution<double> uniform(0, 2*3.14159265359);
+      thrust::uniform_real_distribution<double> uniform(0, 2*M_PI);
 
       mt::Vector<complex<FloatType>, mt::e_host> fft_data;
       mt::Vector<complex<FloatType>, DeviceType> fft_data_dev;
@@ -1715,11 +1668,145 @@ namespace multem {
     }
   }
 
+  /**
+   * Run tests for all devices and precisions
+   */
   void test_ice_potential_approximation() {
     test_ice_potential_approximation_internal<float, mt::e_host>();
     test_ice_potential_approximation_internal<double, mt::e_host>();
     test_ice_potential_approximation_internal<float, mt::e_device>();
     test_ice_potential_approximation_internal<double, mt::e_device>();
   }
+
+	/**
+   * Run tests for the cuboid masker
+   */
+	void test_cuboid_masker() {
+    
+    // Setup the masker
+    Masker masker;
+    masker.set_image_size(100, 200);
+    masker.set_pixel_size(0.5);
+    masker.set_cuboid({ 10, 11, 12 }, { 20, 30, 40 });
+    masker.set_translation({4, 5, 6});
+    masker.set_rotation({10, 11, 12}, 90);
+
+    // Check stuff
+    MULTEM_ASSERT(masker.xsize() == 100);
+    MULTEM_ASSERT(masker.ysize() == 200);
+    MULTEM_ASSERT(masker.image_size() == 200*100);
+    MULTEM_ASSERT(masker.pixel_size() == 0.5);
+    MULTEM_ASSERT(masker.shape() == Masker::Cuboid);
+    MULTEM_ASSERT(masker.offset()[0] ==  10);
+    MULTEM_ASSERT(masker.offset()[1] ==  11);
+    MULTEM_ASSERT(masker.offset()[2] ==  12);
+    MULTEM_ASSERT(masker.size()[0] == 20);
+    MULTEM_ASSERT(masker.size()[1] == 30);
+    MULTEM_ASSERT(masker.size()[2] == 40);
+    MULTEM_ASSERT(masker.xmin() == (10 + 4));
+    MULTEM_ASSERT(masker.ymin() == (11 - 40 + 5));
+    MULTEM_ASSERT(masker.zmin() == (12 + 6));
+    MULTEM_ASSERT(masker.xmax() == (10 + 20 + 4));
+    MULTEM_ASSERT(masker.ymax() == (11 + 5));
+    MULTEM_ASSERT(masker.zmax() == (12 + 30 + 6));
+    MULTEM_ASSERT(masker.rotation_origin()[0] == 10);
+    MULTEM_ASSERT(masker.rotation_origin()[1] == 11);
+    MULTEM_ASSERT(masker.rotation_origin()[2] == 12);
+    MULTEM_ASSERT(masker.rotation_angle() == 90);
+    MULTEM_ASSERT(masker.translation()[0] == 4);
+    MULTEM_ASSERT(masker.translation()[1] == 5);
+    MULTEM_ASSERT(masker.translation()[2] == 6);
+
+    // Compute the mask
+    std::vector<bool> mask(masker.image_size());
+    for (std::size_t z = 0; z < 100; ++z) {
+      masker.compute(z, z+1, mask.begin());
+      for (std::size_t j = 0; j < 200; ++j) {
+        for (std::size_t i = 0; i < 100; ++i) {
+          double x = i * masker.pixel_size();
+          double y = j * masker.pixel_size();
+          bool value = false;
+          if (x >= masker.xmin() && x < masker.xmax() && 
+              y >= masker.ymin() && y < masker.ymax() &&
+              z >= masker.zmin() && z < masker.zmax()) {
+            value = true;
+          }
+          MULTEM_ASSERT(mask[i+j*masker.xsize()] == value);
+        }
+      }
+    }
+	}
+
+	/**
+   * Run tests for the cylinder masker
+   */
+  void test_cylinder_masker() {
+
+    // Setup the masker
+    Masker masker;
+    masker.set_image_size(100, 200);
+    masker.set_pixel_size(0.5);
+    masker.set_cylinder({ 10, 11, 12 }, 50, 12);
+    masker.set_translation({4, 5, 6});
+    masker.set_rotation({10, 11, 12}, 90);
+
+    // Check stuff
+    MULTEM_ASSERT(masker.xsize() == 100);
+    MULTEM_ASSERT(masker.ysize() == 200);
+    MULTEM_ASSERT(masker.image_size() == 200*100);
+    MULTEM_ASSERT(masker.pixel_size() == 0.5);
+    MULTEM_ASSERT(masker.shape() == Masker::Cylinder);
+    MULTEM_ASSERT(masker.offset()[0] ==  10);
+    MULTEM_ASSERT(masker.offset()[1] ==  11);
+    MULTEM_ASSERT(masker.offset()[2] ==  12);
+    MULTEM_ASSERT(masker.size()[0] == 50);
+    MULTEM_ASSERT(masker.size()[1] == 2*12);
+    MULTEM_ASSERT(masker.size()[2] == 2*12);
+    MULTEM_ASSERT(masker.xmin() == (10 + 4));
+    MULTEM_ASSERT(masker.ymin() == (11 - 2*12 + 5));
+    MULTEM_ASSERT(masker.zmin() == (12 + 6));
+    MULTEM_ASSERT(masker.xmax() == (10 + 50 + 4));
+    MULTEM_ASSERT(masker.ymax() == (11 + 5));
+    MULTEM_ASSERT(masker.zmax() == (12 + 2*12 + 6));
+    MULTEM_ASSERT(masker.rotation_origin()[0] == 10);
+    MULTEM_ASSERT(masker.rotation_origin()[1] == 11);
+    MULTEM_ASSERT(masker.rotation_origin()[2] == 12);
+    MULTEM_ASSERT(masker.rotation_angle() == 90);
+    MULTEM_ASSERT(masker.translation()[0] == 4);
+    MULTEM_ASSERT(masker.translation()[1] == 5);
+    MULTEM_ASSERT(masker.translation()[2] == 6);
+
+    // Compute the mask
+    std::vector<bool> mask(masker.image_size());
+    for (std::size_t z = 0; z < 100; ++z) {
+      masker.compute(z, z+1, mask.begin());
+      for (std::size_t j = 0; j < 200; ++j) {
+        for (std::size_t i = 0; i < 100; ++i) {
+          double x = i * masker.pixel_size();
+          double y = (j + 0.5) * masker.pixel_size();
+          double yc = (masker.ymin() + masker.ymax()) / 2.0;
+          double zc = (masker.zmin() + masker.zmax()) / 2.0;
+          double d1 = std::sqrt((y-yc)*(y-yc)+(z-zc)*(z-zc));
+          double d2 = std::sqrt((y-yc)*(y-yc)+(z+1-zc)*(z+1-zc));
+          double radius = 12;
+          bool value = false;
+          if (x >= masker.xmin() && x < masker.xmax() && 
+              std::min(d1,d2) < radius) {
+            value = true;
+          }
+          MULTEM_ASSERT(mask[i+j*masker.xsize()] == value);
+        }
+      }
+    }
+
+  }
+
+	/**
+   * Run tests for the masker
+   */
+	void test_masker() {
+		test_cuboid_masker();
+		test_cylinder_masker();
+	}
 }
 

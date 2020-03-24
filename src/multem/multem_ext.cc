@@ -1207,11 +1207,29 @@ PYBIND11_MODULE(multem_ext, m)
 
   // Wrap the multem::Masker class
   py::class_<multem::Masker>(m, "Masker")
-    .def(py::init<std::size_t, std::size_t>())
-    .def("set_shape", &multem::Masker::set_shape)
+    .def(py::init<std::size_t, std::size_t, double>())
+    .def("xsize", &multem::Masker::xsize)
+    .def("ysize", &multem::Masker::ysize)
+    .def("pixel_size", &multem::Masker::pixel_size)
+    .def("shape", &multem::Masker::shape)
+    .def("offset", &multem::Masker::offset)
+    .def("size", &multem::Masker::size)
+    .def("xmin", &multem::Masker::xmin)
+    .def("ymin", &multem::Masker::ymin)
+    .def("zmin", &multem::Masker::zmin)
+    .def("xmax", &multem::Masker::xmax)
+    .def("ymax", &multem::Masker::ymax)
+    .def("zmax", &multem::Masker::zmax)
+    .def("rotation_origin", &multem::Masker::rotation_origin)
+    .def("rotation_angle", &multem::Masker::rotation_angle)
+    .def("translation", &multem::Masker::translation)
+    .def("set_image_size", &multem::Masker::set_image_size)
+    .def("set_pixel_size", &multem::Masker::set_pixel_size)
     .def("set_cube", &multem::Masker::set_cube)
     .def("set_cuboid", &multem::Masker::set_cuboid)
     .def("set_cylinder", &multem::Masker::set_cylinder)
+    .def("set_rotation", &multem::Masker::set_rotation)
+    .def("set_translation", &multem::Masker::set_translation)
     ;
 
   // Expose the simulation function
@@ -1235,5 +1253,6 @@ PYBIND11_MODULE(multem_ext, m)
 
   // Expose some tests
   m.def("test_ice_potential_approximation", &multem::test_ice_potential_approximation);
+	m.def("test_masker", &multem::test_masker);
 }
 
