@@ -1731,7 +1731,7 @@ namespace multem {
               z >= masker.zmin() && z < masker.zmax()) {
             value = true;
           }
-          MULTEM_ASSERT(mask[i+j*masker.xsize()] == value);
+          MULTEM_ASSERT(mask[j+i*masker.ysize()] == value);
         }
       }
     }
@@ -1794,7 +1794,7 @@ namespace multem {
               std::min(d1,d2) < radius) {
             value = true;
           }
-          MULTEM_ASSERT(mask[i+j*masker.xsize()] == value);
+          MULTEM_ASSERT(mask[j+i*masker.ysize()] == value);
         }
       }
     }
