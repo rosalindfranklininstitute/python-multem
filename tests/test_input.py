@@ -26,7 +26,7 @@ def test_input():
     input.pn_dim = 30
     input.pn_seed = 40
 
-    input.spec_atoms = [(1, 2, 3, 4, 5, 6, 7, 8), (2, 3, 4, 5, 6, 7, 8, 9)]
+    input.spec_atoms = multem.AtomList([(1, 2, 3, 4, 5, 6, 7, 8), (2, 3, 4, 5, 6, 7, 8, 9)])
 
     input.spec_dz = 50.1
     input.spec_lx = 60.1

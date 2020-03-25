@@ -462,7 +462,7 @@ namespace pybind11 { namespace detail {
         self.pn_nconf,
         self.pn_dim,
         self.pn_seed,
-        self.spec_atoms,
+        py::list(py::cast(self.spec_atoms)),
         self.spec_dz,
         self.spec_lx,
         self.spec_ly,
@@ -606,7 +606,11 @@ namespace pybind11 { namespace detail {
       self.pn_nconf = obj[8].cast< int >();
       self.pn_dim = obj[9].cast< int >();
       self.pn_seed = obj[10].cast< int >();
-      self.spec_atoms = obj[11].cast< std::vector<multem::Atom> >();
+      py::list spec_atoms = obj[11].cast< py::list >();
+      self.spec_atoms.reserve(spec_atoms.size());
+      for (auto x : spec_atoms) {
+        self.spec_atoms.push_back(x.cast<multem::Atom>());
+      }
       self.spec_dz = obj[12].cast< double >();
       self.spec_lx = obj[13].cast< double >();
       self.spec_ly = obj[14].cast< double >();
