@@ -297,7 +297,7 @@ namespace multem {
 
       // Compute the min and max y
       auto compute_ymin_and_ymax = [](double z, vector2 a, vector2 b, double &y0, double &y1) {
-        if (z >= std::min(a[1], b[0]) && z < std::max(a[1], b[1])) {
+        if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
           double y = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
           y0 = std::min(y0, y);
           y1 = std::max(y0, y);
@@ -313,29 +313,30 @@ namespace multem {
         // Compute min and max y
         double x0 = xmin();
         double x1 = xmax();
-				double y1 = ymax();
-				double y0 = ymin();
+				double y0 = ymax();
+				double y1 = ymin();
         compute_ymin_and_ymax(zc, points_[0], points_[1], y0, y1);
         compute_ymin_and_ymax(zc, points_[1], points_[2], y0, y1);
         compute_ymin_and_ymax(zc, points_[2], points_[3], y0, y1);
         compute_ymin_and_ymax(zc, points_[3], points_[0], y0, y1);
-        MULTEM_ASSERT(y1 >= y0);
+        if (y1 > y0) {
 
-        // Convert to pixels
-        x0 /= pixel_size_;
-        x1 /= pixel_size_;
-        y0 /= pixel_size_;
-        y1 /= pixel_size_;
+          // Convert to pixels
+          x0 /= pixel_size_;
+          x1 /= pixel_size_;
+          y0 /= pixel_size_;
+          y1 /= pixel_size_;
 
-        // Compute the slice mask
-        for (std::size_t i = 0; i < xsize_; ++i) {
-          for (std::size_t j = 0; j < ysize_; ++j) {
-            if (i >= x0 && i < x1 && j >= y0 && j < y1) {
-              *iterator = true;
-            } else {
-              *iterator = false;
+          // Compute the slice mask
+          for (std::size_t i = 0; i < xsize_; ++i) {
+            for (std::size_t j = 0; j < ysize_; ++j) {
+              if (i >= x0 && i < x1 && j >= y0 && j < y1) {
+                *iterator = true;
+              } else {
+                *iterator = false;
+              }
+              ++iterator;
             }
-            ++iterator;
           }
         }
       } else {
