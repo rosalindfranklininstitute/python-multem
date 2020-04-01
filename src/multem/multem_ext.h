@@ -759,13 +759,19 @@ namespace multem {
     return result;
   }
 
+  /* Function callback for projected potential */
+  typedef std::function<void(double, double, Image<double>)> projected_potential_callback;
+
   /**
    * Run the simulation
    * @param config The system configuration
    * @param input The input
    * @returns The simulation results
    */
-  Output compute_projected_potential(SystemConfiguration config, Input input);
+  Output compute_projected_potential(
+      SystemConfiguration config, 
+      Input input, 
+      projected_potential_callback callback);
 
   /**
    * @returns True/False if the GPU is available
