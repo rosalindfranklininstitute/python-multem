@@ -534,7 +534,7 @@ namespace multem {
           a3 * exp(-0.5*(r-m3)*(r-m3)/(s3*s3));
         double amplitude = sqrt(power);
         double phase = uniform(rnd);
-        return amplitude * exp(T(0, phase)); 
+        return (T)(amplitude) * exp(T(0, phase)); 
       }
     };
 
