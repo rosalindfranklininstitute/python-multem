@@ -1195,6 +1195,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("m2psi_tot", &multem::Data::m2psi_tot)
     .def_readwrite("m2psi_coh", &multem::Data::m2psi_coh)
     .def_readwrite("psi_coh", &multem::Data::psi_coh)
+    .def_readwrite("V", &multem::Data::V)
     ;
 
   // Wrap the multem::Output class
@@ -1242,9 +1243,22 @@ PYBIND11_MODULE(multem_ext, m)
   // the python GIL for all C++ functions, we should release the GIL in order
   // to avoid instability in software using python threads. This was observed to
   // be an issue with dask parallism on the cluster
-  m.def("simulate", &multem::simulate, py::call_guard<py::gil_scoped_release>());
-  m.def("simulate", &py::detail::simulate_slices, py::call_guard<py::gil_scoped_release>());
-  m.def("simulate", &multem::simulate_with_ice_approximation, py::call_guard<py::gil_scoped_release>());
+  m.def(
+      "simulate", 
+      &multem::simulate, 
+      py::call_guard<py::gil_scoped_release>());
+  m.def(
+      "simulate", 
+      &py::detail::simulate_slices, 
+      py::call_guard<py::gil_scoped_release>());
+  m.def(
+      "simulate", 
+      &multem::simulate_with_ice_approximation, 
+      py::call_guard<py::gil_scoped_release>());
+  m.def(
+      "compute_projected_potential", 
+      &multem::compute_projected_potential, 
+      py::call_guard<py::gil_scoped_release>());
 
   // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);

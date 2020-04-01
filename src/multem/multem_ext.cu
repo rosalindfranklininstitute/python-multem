@@ -468,9 +468,15 @@ namespace multem {
     struct ComputeGaussianRandomField {
 
       Generator gen;
-      double A;
-      double B;
-      double S;
+      double a1;
+      double a2;
+      double a3;
+      double m1;
+      double m2;
+      double m3;
+      double s1;
+      double s2;
+      double s3;
       double xsize;
       double ysize;
 
@@ -479,15 +485,27 @@ namespace multem {
        */
       ComputeGaussianRandomField(
             const Generator &gen_, 
-            double A_, 
-            double B_, 
-            double S_, 
+            double a1_,
+            double a2_,
+            double a3_,
+            double m1_,
+            double m2_,
+            double m3_,
+            double s1_,
+            double s2_,
+            double s3_,
             size_t xsize_, 
             size_t ysize_)
         : gen(gen_),
-          A(A_),
-          B(B_),
-          S(S_),
+          a1(a1_),
+          a2(a2_),
+          a3(a3_),
+          m1(m1_),
+          m2(m2_),
+          m3(m3_),
+          s1(s1_),
+          s2(s2_),
+          s3(s3_),
           xsize(xsize_),
           ysize(ysize_) {}
 
@@ -509,7 +527,11 @@ namespace multem {
         // Compute the power spectrum and phase
         double xd = (i-xsize/2.0)/(xsize/2.0);
         double yd = (j-ysize/2.0)/(ysize/2.0);
-        double power = A * exp(-0.5*(xd*xd + yd*yd) / (S*S)) + B;
+        double r = sqrt(xd*xd+yd*yd);
+        double power = 
+          a1 * exp(-0.5*(r-m1)*(r-m1)/(s1*s1)) +
+          a2 * exp(-0.5*(r-m2)*(r-m2)/(s2*s2)) +
+          a3 * exp(-0.5*(r-m3)*(r-m3)/(s3*s3));
         double amplitude = sqrt(power);
         double phase = uniform(rnd);
         return amplitude * exp(T(0, phase)); 
@@ -566,13 +588,27 @@ namespace multem {
 			using T_c = complex<FloatType>;
 
       thrust::default_random_engine gen_;
-      double alpha0_;
-      double alpha1_;
-      double theta0_;
-      double theta1_;
-      double A_;
-      double B_;
-      double S_;
+      double alpha_a1_;
+      double alpha_a2_;
+      double alpha_m1_;
+      double alpha_m2_;
+      double alpha_s1_;
+      double alpha_s2_;
+      double theta_a1_;
+      double theta_a2_;
+      double theta_m1_;
+      double theta_m2_;
+      double theta_s1_;
+      double theta_s2_;
+      double a1_;
+      double a2_;
+      double a3_;
+      double m1_;
+      double m2_;
+      double m3_;
+      double s1_;
+      double s2_;
+      double s3_;
       mt::Grid_2d<FloatType> grid_2d_;
       mt::Vector<T_c, DeviceType> fft_data_;
       bool fft_data_use_real_;
@@ -586,13 +622,27 @@ namespace multem {
        */
       IcePotentialApproximation()
         : gen_(std::random_device()()),
-          alpha0_(0.228667),
-          alpha1_(-0.151448),
-          theta0_(-0.040908),
-          theta1_(11.350992),
-          A_(0.102808),
-          B_(0.011724),
-          S_(0.415437),
+          alpha_a1_(3.61556763),
+          alpha_a2_(23.22955402),
+          alpha_m1_(5.48214868),
+          alpha_m2_(11.81498691),
+          alpha_s1_(2.27209584),
+          alpha_s2_(3.64439385),
+          theta_a1_(41.7597107),
+          theta_a2_(1077.04791),
+          theta_m1_(0.604256237),
+          theta_m2_(-10.0000000),
+          theta_s1_(1.65486734),
+          theta_s2_(35.4955295),
+          a1_(1560.27916),
+          a2_(4.41780420),
+          a3_(693.960558),
+          m1_(0.254522845),
+          m2_(10.7305321),
+          m3_(0.308002600),
+          s1_(0.213959063),
+          s2_(0.231840410),
+          s3_(0.662902509),
           fft_data_use_real_(true),
           fft_2d_(NULL) {}
 
@@ -627,13 +677,34 @@ namespace multem {
       /**
        * Set the power spectrum parameters
        */
-      void set_power_spectrum_parameters(double A, double B, double S) {
-        MULTEM_ASSERT(A > 0);
-        MULTEM_ASSERT(B >= 0);
-        MULTEM_ASSERT(S > 0);
-        A_ = A;
-        B_ = B;
-        S_ = S;
+      void set_power_spectrum_parameters(
+          double a1,
+          double a2,
+          double a3,
+          double m1,
+          double m2,
+          double m3,
+          double s1,
+          double s2,
+          double s3) {
+        MULTEM_ASSERT(a1_ >= 0);
+        MULTEM_ASSERT(a2_ >= 0);
+        MULTEM_ASSERT(a3_ >= 0);
+        MULTEM_ASSERT(m1_ >= 0);
+        MULTEM_ASSERT(m2_ >= 0);
+        MULTEM_ASSERT(m3_ >= 0);
+        MULTEM_ASSERT(s1_ >= 0);
+        MULTEM_ASSERT(s2_ >= 0);
+        MULTEM_ASSERT(s3_ >= 0);
+        a1_ = a1;
+        a2_ = a2;
+        a3_ = a3;
+        m1_ = m1;
+        m2_ = m2;
+        m3_ = m3;
+        s1_ = s1;
+        s2_ = s2;
+        s3_ = s3;
         fft_data_use_real_ = true;
       }
       
@@ -641,18 +712,42 @@ namespace multem {
        * Set the gamma parameters
        */
       void set_gamma_parameters(
-          double alpha0, 
-          double alpha1, 
-          double theta0, 
-          double theta1) {
-        MULTEM_ASSERT(alpha0_ >= 0);
-        MULTEM_ASSERT(alpha1_ >= 0);
-        MULTEM_ASSERT(theta0_ >= 0);
-        MULTEM_ASSERT(theta1_ >= 0);
-        alpha0_ = alpha0;
-        alpha1_ = alpha1;
-        theta0_ = theta0;
-        theta1_ = theta1;
+          double alpha_a1,
+          double alpha_a2,
+          double alpha_m1,
+          double alpha_m2,
+          double alpha_s1,
+          double alpha_s2,
+          double theta_a1,
+          double theta_a2,
+          double theta_m1,
+          double theta_m2,
+          double theta_s1,
+          double theta_s2) {
+        MULTEM_ASSERT(alpha_a1 >= 0);
+        MULTEM_ASSERT(alpha_a2 >= 0);
+        MULTEM_ASSERT(alpha_m1 >= 0);
+        MULTEM_ASSERT(alpha_m2 >= 0);
+        MULTEM_ASSERT(alpha_s1 >= 0);
+        MULTEM_ASSERT(alpha_s2 >= 0);
+        MULTEM_ASSERT(theta_a1 >= 0);
+        MULTEM_ASSERT(theta_a2 >= 0);
+        MULTEM_ASSERT(theta_m1 >= 0);
+        MULTEM_ASSERT(theta_m2 >= 0);
+        MULTEM_ASSERT(theta_s1 >= 0);
+        MULTEM_ASSERT(theta_s2 >= 0);
+        alpha_a1_ = alpha_a1;
+        alpha_a2_ = alpha_a2;
+        alpha_m1_ = alpha_m1;
+        alpha_m2_ = alpha_m2;
+        alpha_s1_ = alpha_s1;
+        alpha_s2_ = alpha_s2;
+        theta_a1_ = theta_a1;
+        theta_a2_ = theta_a2;
+        theta_m1_ = theta_m1;
+        theta_m2_ = theta_m2;
+        theta_s1_ = theta_s1;
+        theta_s2_ = theta_s2;
       }
 
       /**
@@ -675,6 +770,24 @@ namespace multem {
        */
       void set_fft_2d(mt::FFT<T_r, DeviceType> *fft_2d) {
         fft_2d_ = fft_2d;
+      }
+
+      /**
+       * Compute alpha at the given thickness
+       */
+      double compute_alpha(double thickness) const {
+        return 
+          alpha_a1_ * std::exp(-0.5 * std::pow((thickness - alpha_m1_) / alpha_s1_, 2)) +
+          alpha_a2_ * std::exp(-0.5 * std::pow((thickness - alpha_m2_) / alpha_s2_, 2));
+      }
+      
+      /**
+       * Compute theta at the given thickness
+       */
+      double compute_theta(double thickness) const {
+        return 
+          theta_a1_ * std::exp(-0.5 * std::pow((thickness - theta_m1_) / theta_s1_, 2)) +
+          theta_a2_ * std::exp(-0.5 * std::pow((thickness - theta_m2_) / theta_s2_, 2));
       }
 
       /**
@@ -716,9 +829,15 @@ namespace multem {
               fft_data_.begin(),
               ComputeGaussianRandomField<thrust::default_random_engine, T_c>(
                 gen_, 
-                A_, 
-                B_, 
-                S_, 
+                a1_, 
+                a2_, 
+                a3_, 
+                m1_, 
+                m2_, 
+                m3_, 
+                s1_, 
+                s2_, 
+                s3_, 
                 xsize, 
                 ysize));
           gen_.discard(size);
@@ -806,8 +925,8 @@ namespace multem {
 
         // The gamma parameters given the slice slice thickness
         double thickness = (z_e - z_0);
-        double alpha = alpha0_ * thickness + alpha1_;
-        double theta = theta0_ * thickness + theta1_;
+        double alpha = compute_alpha(thickness);
+        double theta = compute_theta(thickness);
 
         // Compute the mask
         compute_mask(z_0, z_e);
@@ -932,6 +1051,60 @@ namespace multem {
         throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
       }
     }
+    
+    /**
+     * Run the multislice simulation
+     * @param system_conf The system configuration
+     * @param input_multislice The input object
+     * @param output_multislice The output object
+     */
+    template <typename FloatType, mt::eDevice DeviceType>
+    void run_projected_potential_internal(
+      const mt::System_Configuration &system_conf,
+      mt::Input_Multislice<FloatType> &input_multislice,
+      mt::Output_Multislice<FloatType> &output_multislice) {
+  
+      // Set the system configration    
+      input_multislice.system_conf = system_conf;
+
+      // Open a stream
+      mt::Stream<DeviceType> stream(system_conf.nstream);
+
+      // Setup the multislice simulation 
+      mt::Projected_Potential<FloatType, DeviceType> projected_potential;
+      projected_potential.set_input_data(&input_multislice, &stream);
+      
+      // Set the input data
+      output_multislice.set_input_data(&input_multislice);
+
+      // Perform the multislice simulation
+      output_multislice.thick.resize(projected_potential.slicing.slice.size());
+      output_multislice.V.resize(projected_potential.slicing.slice.size());
+      mt::Vector<FloatType, DeviceType> V(input_multislice.grid_2d.nxy());
+      mt::Vector<FloatType, mt::e_host> V_host(input_multislice.grid_2d.nxy());
+      for (auto islice = 0; islice < projected_potential.slicing.slice.size(); ++islice) {
+        double z_0 = projected_potential.slicing.slice[islice].z_0;
+        double z_e = projected_potential.slicing.slice[islice].z_e;
+        projected_potential(islice, V);
+        mt::fft2_shift(input_multislice.grid_2d, V);
+        V_host.assign(V.begin(), V.end());
+        output_multislice.thick[islice] = z_0;
+        output_multislice.V[islice].assign(V_host.begin(), V_host.end());
+      }
+
+      // Syncronize stream
+      stream.synchronize();
+      
+      // Get the results
+      output_multislice.gather();
+      output_multislice.clean_temporal();
+
+      // If there was an error then throw an exception
+      auto err = cudaGetLastError();
+      if (err != cudaSuccess) {
+        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      }
+    }
  
     /**
      * Convert the multem::SystemConfiguration object to a
@@ -1047,6 +1220,7 @@ namespace multem {
         input_multislice.thick_type = detail::from_string<mt::eThick_Type>(input.thick_type);
         if (!input_multislice.is_whole_spec() && full) {
           input_multislice.thick.assign(input.thick.begin(), input.thick.end());
+          MULTEM_ASSERT(input_multislice.thick.size() > 0);
         }
 
         // Potential slicing
@@ -1312,32 +1486,51 @@ namespace multem {
       } else if (output_multislice.is_EWFS_EWRS()) {
         for (auto i = 0; i < output_multislice.thick.size(); ++i) {
           if (!output_multislice.is_EWFS_EWRS_SC()) {
+            if (result.data.size() == output_multislice.m2psi_tot.size()) {
+              result.data[i].m2psi_tot = Image<double>(
+                  output_multislice.m2psi_tot[i].data(), 
+                    Image<double>::shape_type({
+                      (std::size_t) output_multislice.nx,
+                      (std::size_t) output_multislice.ny}));
+            }
+          }
+          if (result.data.size() == output_multislice.psi_coh.size()) {
+            result.data[i].psi_coh = Image< std::complex<double> >(
+                output_multislice.psi_coh[i].data(), 
+                Image< std::complex<double> >::shape_type({
+                  (std::size_t) output_multislice.nx,
+                  (std::size_t) output_multislice.ny}));
+          }
+        }
+      } else {
+        for (auto i = 0; i < output_multislice.thick.size(); ++i) {
+          if (result.data.size() == output_multislice.m2psi_tot.size()) {
             result.data[i].m2psi_tot = Image<double>(
                 output_multislice.m2psi_tot[i].data(), 
                   Image<double>::shape_type({
                     (std::size_t) output_multislice.nx,
                     (std::size_t) output_multislice.ny}));
           }
-          result.data[i].psi_coh = Image< std::complex<double> >(
-              output_multislice.psi_coh[i].data(), 
-              Image< std::complex<double> >::shape_type({
-                (std::size_t) output_multislice.nx,
-                (std::size_t) output_multislice.ny}));
-        }
-      } else {
-        for (auto i = 0; i < output_multislice.thick.size(); ++i) {
-          result.data[i].m2psi_tot = Image<double>(
-              output_multislice.m2psi_tot[i].data(), 
-                Image<double>::shape_type({
-                  (std::size_t) output_multislice.nx,
-                  (std::size_t) output_multislice.ny}));
           if (output_multislice.pn_coh_contrib) {
-            result.data[i].m2psi_coh = Image<double>(
-                output_multislice.m2psi_coh[i].data(), 
+            if (result.data.size() == output_multislice.m2psi_coh.size()) {
+              result.data[i].m2psi_coh = Image<double>(
+                  output_multislice.m2psi_coh[i].data(), 
+                  Image<double>::shape_type({
+                    (std::size_t) output_multislice.nx,
+                    (std::size_t) output_multislice.ny}));
+            }
+          }
+        }
+      }
+
+      if (result.data.size() == output_multislice.V.size()) {
+        for (auto i = 0; i < output_multislice.V.size(); ++i) {
+          MULTEM_ASSERT(output_multislice.V[i].size() == output_multislice.nx*output_multislice.ny);
+          result.data[i].V = Image<double>(
+                output_multislice.V[i].data(), 
                 Image<double>::shape_type({
                   (std::size_t) output_multislice.nx,
                   (std::size_t) output_multislice.ny}));
-          }
         }
       }
 
@@ -1434,6 +1627,50 @@ namespace multem {
       result = run_multislice<float, mt::e_device, Masker>(config, input, masker);
     } else if (config.device == "device" && config.precision == "double") {
       result = run_multislice<double, mt::e_device, Masker>(config, input, masker);
+    } else {
+      MULTEM_ASSERT(config.device == "host" || config.device == "device");
+      MULTEM_ASSERT(config.precision == "float" || config.precision == "double");
+    } 
+    return result;
+  }
+  
+  /**
+   * Run the multislice simulation. 
+   * @param config The system configuration
+   * @param input The input object
+   * @returns The output results
+   */
+  template <typename FloatType, mt::eDevice DeviceType>
+  Output run_projected_potential(SystemConfiguration config, Input input) {
+
+    // Initialise the system configuration and input structures 
+    auto system_conf = detail::read_system_configuration(config);
+    auto input_multislice = detail::read_input_multislice<FloatType>(input);
+    input_multislice.system_conf = system_conf;
+
+    // Create the output structure
+    mt::Output_Multislice<FloatType> output_multislice;
+   
+    // Run the simulation 
+    detail::run_projected_potential_internal<FloatType, DeviceType>(
+      system_conf, input_multislice, output_multislice);
+
+    // Return the output struct
+    return detail::write_output_multislice(output_multislice);
+  }
+
+  Output compute_projected_potential(
+      SystemConfiguration config, 
+      Input input) {
+    Output result;
+    if (config.device == "host" && config.precision == "float") {
+      result = run_projected_potential<float, mt::e_host>(config, input);
+    } else if (config.device == "host" && config.precision == "double") {
+      result = run_projected_potential<double, mt::e_host>(config, input);
+    } else if (config.device == "device" && config.precision == "float") {
+      result = run_projected_potential<float, mt::e_device>(config, input);
+    } else if (config.device == "device" && config.precision == "double") {
+      result = run_projected_potential<double, mt::e_device>(config, input);
     } else {
       MULTEM_ASSERT(config.device == "host" || config.device == "device");
       MULTEM_ASSERT(config.precision == "float" || config.precision == "double");

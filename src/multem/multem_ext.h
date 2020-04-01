@@ -574,6 +574,7 @@ namespace multem {
     
     Image<double> m2psi_tot;
     Image<double> m2psi_coh;
+    Image<double> V;
     Image< std::complex<double> > psi_coh;
 
   };
@@ -592,103 +593,6 @@ namespace multem {
     std::vector<Data> data; 
 
   };
-
-  /* class Masker { */
-  /* public: */
-
-  /*   enum Shape { */
-  /*     Cuboid, */
-  /*     Cylinder */
-  /*   }; */
-
-  /*   Masker() */
-  /*     : xsize_(0), */
-  /*       ysize_(0), */
-  /*       shape_(Cuboid), */
-  /*       offset_({0, 0, 0}), */
-  /*       size_({0, 0, 0}) {} */
-
-  /*   Masker(std::size_t ysize, std::size_t xsize) */
-  /*     : xsize_(xsize), */
-  /*       ysize_(ysize), */
-  /*       shape_(Cuboid), */
-  /*       offset_({0, 0, 0}), */
-  /*       size_({0, 0, 0}) { */
-  /*     MULTEM_ASSERT(xsize > 0); */
-  /*     MULTEM_ASSERT(ysize > 0); */
-  /*   } */
-
-  /*   std::size_t xsize() const { */
-  /*     return xsize_; */
-  /*   } */
-    
-  /*   std::size_t ysize() const { */
-  /*     return ysize_; */
-  /*   } */
-
-  /*   Shape shape() const { */
-  /*     return shape_; */
-  /*   } */
-
-  /*   const std::array<double, 3>& offset() const { */
-  /*     return offset_; */
-  /*   } */
-
-  /*   const std::array<double, 3>& size() const { */
-  /*     return size_; */
-  /*   } */
-
-  /*   double zmin() const { */
-  /*     return offset_[2]; */
-  /*   } */
-
-  /*   double zmax() const { */
-  /*     return offset_[2] + size_[2]; */
-  /*   } */
-
-  /*   void set_size(std::size_t ysize, std::size_t xsize) { */
-  /*     xsize_ = xsize; */
-  /*     ysize_ = ysize; */
-  /*     MULTEM_ASSERT(xsize > 0); */
-  /*     MULTEM_ASSERT(ysize > 0); */
-  /*   } */
-
-  /*   void set_shape(std::string shape) { */
-  /*     if (shape == "Cube") { */
-  /*       shape_ = Cuboid; */
-  /*     } else if (shape == "Cuboid") { */
-  /*       shape_ = Cuboid; */
-  /*     } else if (shape == "Cylinder") { */
-  /*       shape_ = Cylinder; */
-  /*     } */
-  /*   } */
-
-  /*   void set_cube(std::array<double,3> offset, double length) { */
-  /*     offset_ = offset; */
-  /*     size_[0] = length; */
-  /*     size_[1] = length; */
-  /*     size_[2] = length; */
-  /*   } */
-    
-  /*   void set_cuboid(std::array<double,3> offset, std::array<double,3> length) { */
-  /*     offset_ = offset; */
-  /*     size_ = length; */
-  /*   } */
-
-  /*   void set_cylinder(std::array<double, 3> offset, double length, double radius) { */
-  /*     offset_ = offset; */
-  /*     size_[0] = length; */
-  /*     size_[1] = radius*2; */
-  /*     size_[2] = radius*2; */
-  /*   } */
-
-  /* protected: */
-  /*   std::size_t xsize_; */
-  /*   std::size_t ysize_; */
-  /*   Shape shape_; */
-  /*   std::array<double, 3> offset_; */
-  /*   std::array<double, 3> size_; */
-  /* }; */
 
   /**
    * Run the simulation
@@ -855,6 +759,13 @@ namespace multem {
     return result;
   }
 
+  /**
+   * Run the simulation
+   * @param config The system configuration
+   * @param input The input
+   * @returns The simulation results
+   */
+  Output compute_projected_potential(SystemConfiguration config, Input input);
 
   /**
    * @returns True/False if the GPU is available
