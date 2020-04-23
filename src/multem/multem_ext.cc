@@ -1260,6 +1260,10 @@ PYBIND11_MODULE(multem_ext, m)
       "compute_projected_potential", 
       &multem::compute_projected_potential, 
       py::call_guard<py::gil_scoped_release>());
+  m.def(
+      "compute_ctf", 
+      &multem::compute_ctf, 
+      py::call_guard<py::gil_scoped_release>());
 
   // Expose the GPU functions
   m.def("is_gpu_available", &multem::is_gpu_available);

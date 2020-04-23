@@ -782,11 +782,19 @@ namespace multem {
    * @returns The number of available GPUs
    */
   int number_of_gpu_available();
+  
+  /**
+   * Compute the CTF
+   */
+  Image< std::complex<double> > compute_ctf( 
+      SystemConfiguration config, 
+      Input input);
 
   double mrad_to_sigma(double E0, double theta);
   double iehwgd_to_sigma(double value);
 
   std::vector<Atom> crystal_by_layers(const CrystalParameters &params);
+
 
   /**
    * Tests
