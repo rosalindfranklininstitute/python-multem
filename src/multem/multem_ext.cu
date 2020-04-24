@@ -529,68 +529,48 @@ namespace multem {
         double yd = (j-ysize/2.0) / ysize;
         double r = sqrt(xd*xd+yd*yd);
         double power = 
-          a1 * (1.0/sqrt(2*M_PI*s1*s1)) * exp(-0.5*(r-m1)*(r-m1)/(s1*s1)) +
-          a2 * (1.0/sqrt(2*M_PI*s2*s2)) * exp(-0.5*(r-m2)*(r-m2)/(s2*s2)) +
-          a3 * (1.0/sqrt(2*M_PI*s3*s3)) * exp(-0.5*(r-m3)*(r-m3)/(s3*s3));
+          a1 * exp(-0.5*(r-m1)*(r-m1)/(s1*s1)) +
+          a2 * exp(-0.5*(r-m2)*(r-m2)/(s2*s2)) +
+          a3 * exp(-0.5*(r-m3)*(r-m3)/(s3*s3)) +
+          a1 * exp(-0.5*(r+m1)*(r+m1)/(s1*s1)) +
+          a2 * exp(-0.5*(r+m2)*(r+m2)/(s2*s2)) +
+          a3 * exp(-0.5*(r+m3)*(r+m3)/(s3*s3));
         double amplitude = sqrt(power);
         double phase = uniform(rnd);
         return (T)(amplitude) * exp(T(0, phase)); 
       }
     };
 
-    struct Normalize {
+    /**
+     * A functor to mask and normalize the gaussian field
+     */
+    struct MaskAndNormalize {
     
       const double mean;
       const double sdev;
 
-      Normalize(double m, double s):
+      MaskAndNormalize(double m, double s):
         mean(m),
         sdev(s) {}
 
-      template <typename T>
+      template <typename T, typename U>
       DEVICE_CALLABLE
-      T operator()(const T x) const {
-        return (x - mean) / sdev;
+      U operator()(const T m, const U x) const {
+        return m*(x - mean) / sdev;
       }
     };
 
     /**
-     * Convert the Gaussian variable into a Gamma variable
+     * Add the potential and random field if potential == 0
      */
-    struct GaussianToGamma {
-
-      const double *gx;
-      const double *gy;
-      size_t size;
-
-      /**
-       * Initialise
-       */
-      GaussianToGamma(const double *gx_, const double *gy_, size_t size_)
-        : gx(gx_),
-          gy(gy_),
-          size(size_) {
-        MULTEM_ASSERT(gx != NULL && gy != NULL && size > 0);    
-      }
-
-      /**
-       * Convert Gaussian to Uniform and Uniform to Gamma using
-       * the Gaussian CDF and Gamma Quantile function lookup
-       */
+    struct AddRandomFieldAndPotential {
+    
+      template <typename T>
       DEVICE_CALLABLE
-      double operator()(double x, bool m) const {
-        double c = 0.5 * (1 + erf(x/sqrt(2.0f)));
-        size_t i = (size_t)min(max(floor(c * size),(double)0), (double)(size-2));
-        double gx0 = gx[i];
-        double gx1 = gx[i+1];
-        double gy0 = gy[i];
-        double gy1 = gy[i+1];
-        double g = gy0 + (gy1 - gy0) / (gx1 - gx0) * (c - gx0);
-        return min(g, 70.0) * m;
+      T operator()(const T r, const T p) const {
+        return (p > 0 ? p : p + r);
       }
-
     };
-
 
     /**
      * Compute an approximation of the ice potential in a slice by modelling as
@@ -604,18 +584,6 @@ namespace multem {
 			using T_c = complex<FloatType>;
 
       thrust::default_random_engine gen_;
-      double alpha_a1_;
-      double alpha_a2_;
-      double alpha_m1_;
-      double alpha_m2_;
-      double alpha_s1_;
-      double alpha_s2_;
-      double theta_a1_;
-      double theta_a2_;
-      double theta_m1_;
-      double theta_m2_;
-      double theta_s1_;
-      double theta_s2_;
       double a1_;
       double a2_;
       double a3_;
@@ -638,45 +606,15 @@ namespace multem {
        */
       IcePotentialApproximation()
         : gen_(std::random_device()()),
-          alpha_m1_(5.482149),
-          alpha_m2_(11.814987),
-          alpha_s1_(2.272096),
-          alpha_s2_(3.644394),
-          alpha_a1_(3.615568),
-          alpha_a2_(23.229554),
-          theta_m1_(0.604256),
-          theta_m2_(-10.000000),
-          theta_s1_(1.654867),
-          theta_s2_(35.495530),
-          theta_a1_(41.759711),
-          theta_a2_(1077.047912),
-          m1_(0.310186),
-          m2_(0.315253),
-          m3_(0.018720),
-          s1_(0.041496),
-          s2_(0.091280),
-          s3_(0.244653),
-          a1_(0.048754),
-          a2_(0.314249),
-          a3_(0.456534),
-          /* m1_(0.310692), */
-          /* m2_(0.315979), */
-          /* m3_(0.000000), */
-          /* s1_(0.040477), */
-          /* s2_(0.086878), */
-          /* s3_(0.332666), */
-          /* a1_(0.037120), */
-          /* a2_(0.240276), */
-          /* a3_(0.715884), */
-          /* m1_(1.712697), */
-          /* m2_(0.099320), */
-          /* m3_(0.307748), */
-          /* s1_(18.959692), */
-          /* s2_(0.344997), */
-          /* s3_(0.069793), */
-          /* a1_(0.000009), */
-          /* a2_(0.709259), */
-          /* a3_(0.224001), */
+          m1_(0.331581),
+          m2_(0.344871),
+          m3_(0.794620),
+          s1_(0.069125),
+          s2_(0.215473),
+          s3_(0.088319),
+          a1_(1.580558),
+          a2_(0.818132),
+          a3_(0.050048),
           fft_data_use_real_(true),
           fft_2d_(NULL) {}
 
@@ -743,48 +681,6 @@ namespace multem {
       }
       
       /**
-       * Set the gamma parameters
-       */
-      void set_gamma_parameters(
-          double alpha_a1,
-          double alpha_a2,
-          double alpha_m1,
-          double alpha_m2,
-          double alpha_s1,
-          double alpha_s2,
-          double theta_a1,
-          double theta_a2,
-          double theta_m1,
-          double theta_m2,
-          double theta_s1,
-          double theta_s2) {
-        MULTEM_ASSERT(alpha_a1 >= 0);
-        MULTEM_ASSERT(alpha_a2 >= 0);
-        MULTEM_ASSERT(alpha_m1 >= 0);
-        MULTEM_ASSERT(alpha_m2 >= 0);
-        MULTEM_ASSERT(alpha_s1 >= 0);
-        MULTEM_ASSERT(alpha_s2 >= 0);
-        MULTEM_ASSERT(theta_a1 >= 0);
-        MULTEM_ASSERT(theta_a2 >= 0);
-        MULTEM_ASSERT(theta_m1 >= 0);
-        MULTEM_ASSERT(theta_m2 >= 0);
-        MULTEM_ASSERT(theta_s1 >= 0);
-        MULTEM_ASSERT(theta_s2 >= 0);
-        alpha_a1_ = alpha_a1;
-        alpha_a2_ = alpha_a2;
-        alpha_m1_ = alpha_m1;
-        alpha_m2_ = alpha_m2;
-        alpha_s1_ = alpha_s1;
-        alpha_s2_ = alpha_s2;
-        theta_a1_ = theta_a1;
-        theta_a2_ = theta_a2;
-        theta_m1_ = theta_m1;
-        theta_m2_ = theta_m2;
-        theta_s1_ = theta_s1;
-        theta_s2_ = theta_s2;
-      }
-
-      /**
        * Set the grid size
        */
       void set_grid(mt::Grid_2d<FloatType> grid_2d) {
@@ -807,24 +703,6 @@ namespace multem {
       }
 
       /**
-       * Compute alpha at the given thickness
-       */
-      double compute_alpha(double thickness) const {
-        return 
-          alpha_a1_ * std::exp(-0.5 * std::pow((thickness - alpha_m1_) / alpha_s1_, 2)) +
-          alpha_a2_ * std::exp(-0.5 * std::pow((thickness - alpha_m2_) / alpha_s2_, 2));
-      }
-      
-      /**
-       * Compute theta at the given thickness
-       */
-      double compute_theta(double thickness) const {
-        return 
-          theta_a1_ * std::exp(-0.5 * std::pow((thickness - theta_m1_) / theta_s1_, 2)) +
-          theta_a2_ * std::exp(-0.5 * std::pow((thickness - theta_m2_) / theta_s2_, 2));
-      }
-
-      /**
        * Compute the mask
        */
       void compute_mask(double z_0, double z_e) {
@@ -844,7 +722,7 @@ namespace multem {
       /**
        * Compute a gaussian random field
        */
-      void compute_gaussian_random_field() {
+      void compute_gaussian_random_field(double mu, double sigma) {
 
         // We get two random fields for one calculation so we either use the
         // real or imaginary component 
@@ -896,62 +774,24 @@ namespace multem {
             double(0), 
             mt::functor::add<double>()) / random_field_.size();
 
-        // Compute the variance
-        double variance = thrust::transform_reduce(
+        // Compute the standard deviation
+        double sdev = std::sqrt(thrust::transform_reduce(
             random_field_.begin(),
             random_field_.end(), 
             mt::functor::square_dif<double, double>(0), 
             double(0), 
-            mt::functor::add<double>()) / random_field_.size();
+            mt::functor::add<double>()) / random_field_.size());
         
         // Normalize by the variance
         thrust::transform(
+            mask_.begin(),
+            mask_.end(),
             random_field_.begin(),
-            random_field_.end(),
             random_field_.begin(),
-            Normalize(mean, std::sqrt(variance)));
-        /* mt::scale(1.0 / std::sqrt(variance), random_field_); */
+            MaskAndNormalize(mean-mu*sdev/sigma, sdev/sigma));
 
         // Toggle real/imag
         fft_data_use_real_ = !fft_data_use_real_;
-      }
-
-      /**
-       * Compute the Gamma random field and add to input potential
-       */
-      void compute_gamma_random_field(
-          double alpha,
-          double theta) {
-        alpha = 1.279146202556906;
-        theta = 9.458923282489229;
-        //alpha = 1.059916553870336;
-        //theta = 11.405600300446869;
-        // Compute the lookup table for the quantile function of the Gamma distribution
-        const size_t N_LOOKUP = 1000;
-        mt::Vector<double, mt::e_host> gx(N_LOOKUP);
-        mt::Vector<double, mt::e_host> gy(N_LOOKUP);
-        mt::Vector<double, DeviceType> gx_dev(gx.size());
-        mt::Vector<double, DeviceType> gy_dev(gy.size());
-        for (std::size_t i = 0; i < gx.size(); ++i) {
-          gx[i] = (double)i / (double)gx.size();
-          gy[i] = boost::math::gamma_p_inv(alpha, gx[i]) * theta;
-        }
-        gx_dev.assign(gx.begin(), gx.end());
-        gy_dev.assign(gy.begin(), gy.end());
-
-        // Transform the Normal distribution into a Gamma distribution
-        thrust::transform(
-            random_field_.begin(), 
-            random_field_.end(), 
-            mask_.begin(),
-            random_field_.begin(), 
-            GaussianToGamma(
-              thrust::raw_pointer_cast(gx_dev.data()),
-              thrust::raw_pointer_cast(gy_dev.data()),
-              gx.size())); 
-
-        // Shift the grid
-        mt::fft2_shift(grid_2d_, random_field_);
       }
 
       /**
@@ -973,43 +813,24 @@ namespace multem {
 
         // The gamma parameters given the slice slice thickness
         double thickness = (z_e - z_0);
-        double alpha = compute_alpha(thickness);
-        double theta = compute_theta(thickness);
 
         // Compute the mask
         compute_mask(z_0, z_e);
 
         // Compute the Fourier transform of the Gaussian Random Field
-        compute_gaussian_random_field();
+        compute_gaussian_random_field(12.011972100899177, 10.699707763944328);
+        /* compute_gaussian_random_field(2.407358044855012, 5.063523512869212); */
 
-        // Convert the gaussian random field into a gamma field
-        compute_gamma_random_field(alpha, theta);
+        // Shift the grid
+        mt::fft2_shift(grid_2d_, random_field_);
 
-        //mt::Vector<FloatType, mt::e_host> V(V_0.size());
-        //V.assign(random_field_.begin(), random_field_.end());
-        //static int index = 0;
-        //std::string filename = "test_potential_" + std::to_string(index) + ".dat";
-        //std::ifstream handle(filename);
-        //for (auto &v : V) {
-        //  handle >> v;
-        //}
-        //random_field_.assign(V.begin(), V.end());
-        /* std::string filename = "statistical_potential_" + std::to_string(index) + ".dat"; */
-        /* std::ofstream handle(filename); */
-        /* handle << z_e - z_0 << std::endl; */
-        /* for (auto v : V) { */
-        /*   handle << v << ", "; */
-        /* } */
-        /* handle << std::endl; */
-        //index++;
-        /* exit(0); */
         // Add the random field to the potential map
         thrust::transform(
             random_field_.begin(), 
             random_field_.end(),
             V_0.begin(),
             V_0.begin(), 
-            mt::functor::add<T_r>());
+            AddRandomFieldAndPotential());
       }
     };
    
