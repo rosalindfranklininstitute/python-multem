@@ -462,12 +462,203 @@ namespace multem {
 
 
     /**
+     * Compute mask with cuboid masker
+     */
+    template <typename T>
+    struct CuboidMaskSlice {
+
+      double x0;
+      double x1;
+      double y0;
+      double y1;
+      std::size_t xsize;
+      std::size_t ysize;
+
+      CuboidMaskSlice(
+          double x0_,
+          double x1_,
+          double y0_,
+          double y1_,
+          std::size_t xsize_,
+          std::size_t ysize_)
+        : x0(x0_),
+          x1(x1_),
+          y0(y0_),
+          y1(y1_),
+          xsize(xsize_),
+          ysize(ysize_) {}
+
+      DEVICE_CALLABLE
+      T operator()(size_t index) const {
+        size_t j = index / xsize;
+        size_t i = index - j * xsize;
+        return (i >= x0 && i < x1 && j >= y0 && j < y1);
+      }
+    };
+
+    /**
+     * Compute mask with cylinder masker
+     */
+    template <typename T>
+    struct CylinderMaskSlice {
+
+      double x0;
+      double x1;
+      double yc;
+      double zc;
+      double zs;
+      double ze;
+      double radius2;
+      std::size_t xsize;
+      std::size_t ysize;
+
+      CylinderMaskSlice(
+          double x0_,
+          double x1_,
+          double yc_,
+          double zc_,
+          double zs_,
+          double ze_,
+          double radius2_,
+          std::size_t xsize_,
+          std::size_t ysize_)
+        : x0(x0_),
+          x1(x1_),
+          yc(yc_),
+          zc(zc_),
+          zs(zs_),
+          ze(ze_),
+          radius2(radius2_),
+          xsize(xsize_),
+          ysize(ysize_) {}
+
+      DEVICE_CALLABLE
+      T operator()(size_t index) const {
+        size_t j = index / xsize;
+        size_t i = index - j * xsize;
+        double r1 = (j+0.5-yc)*(j+0.5-yc)+(zs-zc)*(zs-zc);
+        double r2 = (j+0.5-yc)*(j+0.5-yc)+(ze-zc)*(ze-zc);
+        return (i >= x0 && i < x1 && min(r1, r2) < radius2);
+      }
+    };
+    
+    /**
+     * Compute mask with cuboid masker
+     */
+    template <typename Iterator>
+    void compute_mask(const CuboidMasker &masker, double zs, double ze, Iterator iterator) {
+
+      // Compute the min and max y
+      auto compute_ymin_and_ymax = [](
+          double z, 
+          CuboidMasker::vector2 a, 
+          CuboidMasker::vector2 b, 
+          double &y0, 
+          double &y1) {
+        if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
+          double y = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
+          y0 = std::min(y0, y);
+          y1 = std::max(y0, y);
+        }
+      };
+
+      // The middle z coordinate of the slice
+      double zc = (zs + ze) / 2.0;
+        
+      // Compute min and max y
+      double x0 = masker.xmin();
+      double x1 = masker.xmax();
+      double y0 = masker.ymax();
+      double y1 = masker.ymin();
+      compute_ymin_and_ymax(zc, masker.points()[0], masker.points()[1], y0, y1);
+      compute_ymin_and_ymax(zc, masker.points()[1], masker.points()[2], y0, y1);
+      compute_ymin_and_ymax(zc, masker.points()[2], masker.points()[3], y0, y1);
+      compute_ymin_and_ymax(zc, masker.points()[3], masker.points()[0], y0, y1);
+
+      // Only do something if the slice is within range
+      if (zs < masker.zmax() && ze > masker.zmin() & y1 > y0) {
+
+        // Convert to pixels
+        x0 /= masker.pixel_size();
+        x1 /= masker.pixel_size();
+        y0 /= masker.pixel_size();
+        y1 /= masker.pixel_size();
+
+        thrust::counting_iterator<size_t> indices(0);
+        thrust::transform(
+            indices,
+            indices + masker.image_size(),
+            iterator, 
+            CuboidMaskSlice<bool>(x0, x1, y0, y1, masker.xsize(), masker.ysize()));
+      } else {
+        thrust::fill(iterator, iterator + masker.image_size(), 0);
+      }
+
+    }
+    
+    /**
+     * Compute mask with cylinder masker
+     */
+    template <typename Iterator>
+    void compute_mask(const CylinderMasker &masker, double zs, double ze, Iterator iterator) {
+      MULTEM_ASSERT(ze > zs);
+
+      // Convert to pixels
+      double x0 = masker.xmin() / masker.pixel_size();
+      double x1 = masker.xmax() / masker.pixel_size();
+      double y0 = masker.ymin() / masker.pixel_size();
+      double y1 = masker.ymax() / masker.pixel_size();
+      double z0 = masker.zmin() / masker.pixel_size();
+      double z1 = masker.zmax() / masker.pixel_size();
+      double yc = (y0 + y1) / 2.0;
+      double zc = (z0 + z1) / 2.0;
+      zs /= masker.pixel_size();
+      ze /= masker.pixel_size();
+
+      // Compute the radius squared
+      double radius2 = std::pow(0.5 * masker.size()[1] / masker.pixel_size(), 2);
+
+      // Compute the slice mask
+      if (zs < z1 && ze > z0) {
+        thrust::counting_iterator<size_t> indices(0);
+        thrust::transform(
+            indices,
+            indices + masker.image_size(),
+            iterator, 
+            CylinderMaskSlice<bool>(
+              x0, 
+              x1, 
+              yc, 
+              zc, 
+              zs,
+              ze,
+              radius2,
+              masker.xsize(), masker.ysize()));
+      } else {
+        thrust::fill(iterator, iterator + masker.image_size(), 0);
+      }
+    }
+
+    /**
+     * Compute mask
+     */
+    template <typename Iterator>
+    void masker_compute_mask(const Masker &masker, double zs, double ze, Iterator iterator) {
+      if (masker.shape() == Masker::Cuboid) {
+        compute_mask(masker.cuboid_masker(), zs, ze, iterator);
+      } else if (masker.shape() == Masker::Cylinder) {
+        compute_mask(masker.cylinder_masker(), zs, ze, iterator);
+      } else {
+        MULTEM_ASSERT(false); // Should never reach here
+      }
+    }
+
+    /**
      * Compute the FT of the Gaussian Random Field
      */
-    template <typename Generator, typename T>
-    struct ComputeGaussianRandomField {
+    template <typename T>
+    struct ComputeGaussianRandomFieldAmplitude {
 
-      Generator gen;
       double a1;
       double a2;
       double a3;
@@ -483,8 +674,7 @@ namespace multem {
       /**
        * Initialise
        */
-      ComputeGaussianRandomField(
-            const Generator &gen_, 
+      ComputeGaussianRandomFieldAmplitude(
             double a1_,
             double a2_,
             double a3_,
@@ -496,8 +686,7 @@ namespace multem {
             double s3_,
             size_t xsize_, 
             size_t ysize_)
-        : gen(gen_),
-          a1(a1_),
+        : a1(a1_),
           a2(a2_),
           a3(a3_),
           m1(m1_),
@@ -517,13 +706,6 @@ namespace multem {
         size_t j = index / xsize;
         size_t i = index - j * xsize;
 
-        // The uniform distribution
-        thrust::uniform_real_distribution<double> uniform(0, 2*M_PI);
-
-        // Initialise the random number generator
-        Generator rnd = gen;
-        rnd.discard(index);
-
         // Compute the power spectrum and phase
         double xd = (i-xsize/2.0) / xsize;
         double yd = (j-ysize/2.0) / ysize;
@@ -535,7 +717,39 @@ namespace multem {
           a1 * exp(-0.5*(r+m1)*(r+m1)/(s1*s1)) +
           a2 * exp(-0.5*(r+m2)*(r+m2)/(s2*s2)) +
           a3 * exp(-0.5*(r+m3)*(r+m3)/(s3*s3));
-        double amplitude = sqrt(power);
+        return sqrt(power);
+      }
+    };
+
+    /**
+     * Compute the FT of the Gaussian Random Field
+     */
+    template <typename Generator, typename T>
+    struct ComputeGaussianRandomField {
+
+      Generator gen;
+
+      /**
+       * Initialise
+       */
+      ComputeGaussianRandomField(const Generator &gen_)
+        : gen(gen_) {}
+
+      /**
+       * Compute the FT of the GRF at this index
+       */
+      template <typename U>
+      DEVICE_CALLABLE
+      T operator()(size_t index, U amplitude) const {
+
+        // Initialise the random number generator
+        Generator rnd = gen;
+        rnd.discard(index);
+
+        // The uniform distribution
+        thrust::uniform_real_distribution<double> uniform(0, 2*M_PI);
+
+        // Compute the FT of the GRF
         double phase = uniform(rnd);
         return (T)(amplitude) * exp(T(0, phase)); 
       }
@@ -594,8 +808,9 @@ namespace multem {
       double s2_;
       double s3_;
       mt::Grid_2d<FloatType> grid_2d_;
+      mt::Vector<T_r, DeviceType> amplitude_;
       mt::Vector<T_c, DeviceType> fft_data_;
-      bool fft_data_use_real_;
+      std::size_t fft_data_counter_;
       mt::Vector<T_r, DeviceType> random_field_;
       mt::Vector<bool, DeviceType> mask_;
       mt::FFT<T_r, DeviceType> *fft_2d_;
@@ -615,7 +830,7 @@ namespace multem {
           a1_(1.580558),
           a2_(0.818132),
           a3_(0.050048),
-          fft_data_use_real_(true),
+          fft_data_counter_(0),
           fft_2d_(NULL) {}
 
       /**
@@ -677,7 +892,7 @@ namespace multem {
         s1_ = s1;
         s2_ = s2;
         s3_ = s3;
-        fft_data_use_real_ = true;
+        fft_data_counter_ = 0;
       }
       
       /**
@@ -687,11 +902,12 @@ namespace multem {
 
         // If we set the grid then resize everything
         if (grid_2d.nx != grid_2d_.nx || grid_2d.ny != grid_2d_.ny) {
-          grid_2d_ = grid_2d,
+          grid_2d_ = grid_2d;
+          amplitude_.resize(grid_2d.nx * grid_2d.ny);
           fft_data_.resize(grid_2d.nx * grid_2d.ny);
           random_field_.resize(grid_2d.nx * grid_2d.ny);
           mask_.resize(grid_2d.nx * grid_2d.ny);
-          fft_data_use_real_ = true;
+          fft_data_counter_ = 0;
         }
       }
       
@@ -713,34 +929,27 @@ namespace multem {
         MULTEM_ASSERT(masker_.xsize() * masker_.ysize() == mask_.size());
 
         // Create host vector and then compute mask and copy
-        mt::Vector<bool, mt::e_host> mask_host;
-        mask_host.resize(mask_.size());
-        masker_.compute(z_0, z_e, mask_host.begin());
-        mask_.assign(mask_host.begin(), mask_host.end());
+        masker_compute_mask(masker_, z_0, z_e, mask_.begin());
       }
 
       /**
        * Compute a gaussian random field
        */
       void compute_gaussian_random_field(double mu, double sigma) {
-
-        // We get two random fields for one calculation so we either use the
-        // real or imaginary component 
-        if (fft_data_use_real_) {
          
-          // The data size
-          std::size_t xsize = grid_2d_.nx;
-          std::size_t ysize = grid_2d_.ny;
-          std::size_t size = xsize*ysize;
-
-          // Compute the Fourier transform of the Gaussian Random Field
+        // The data size
+        std::size_t xsize = grid_2d_.nx;
+        std::size_t ysize = grid_2d_.ny;
+        std::size_t size = xsize*ysize;
+       
+        // Compute amplitude the first iteration
+        if (fft_data_counter_ == 0) {
           thrust::counting_iterator<size_t> indices(0);
           thrust::transform(
               indices,
               indices + size,
-              fft_data_.begin(),
-              ComputeGaussianRandomField<thrust::default_random_engine, T_c>(
-                gen_, 
+              amplitude_.begin(),
+              ComputeGaussianRandomFieldAmplitude<T_r>(
                 a1_, 
                 a2_, 
                 a3_, 
@@ -752,6 +961,20 @@ namespace multem {
                 s3_, 
                 xsize, 
                 ysize));
+        }
+
+        // We get two random fields for one calculation so we either use the
+        // real or imaginary component 
+        if ((fft_data_counter_ & 1) == 0) {
+
+          // Compute the Fourier transform of the Gaussian Random Field
+          thrust::counting_iterator<size_t> indices(0);
+          thrust::transform(
+              indices,
+              indices + size,
+              amplitude_.begin(),
+              fft_data_.begin(),
+              ComputeGaussianRandomField<thrust::default_random_engine, T_c>(gen_));
           gen_.discard(size);
 
           // Shift the FFT and then invert
@@ -791,7 +1014,7 @@ namespace multem {
             MaskAndNormalize(mean-mu*sdev/sigma, sdev/sigma));
 
         // Toggle real/imag
-        fft_data_use_real_ = !fft_data_use_real_;
+        fft_data_counter_++;
       }
 
       /**
@@ -818,8 +1041,8 @@ namespace multem {
         compute_mask(z_0, z_e);
 
         // Compute the Fourier transform of the Gaussian Random Field
-        compute_gaussian_random_field(12.011972100899177, 10.699707763944328);
-        /* compute_gaussian_random_field(2.407358044855012, 5.063523512869212); */
+        /* compute_gaussian_random_field(12.011972100899177, 10.699707763944328); */
+        compute_gaussian_random_field(2.407358044855012, 5.063523512869212);
 
         // Shift the grid
         mt::fft2_shift(grid_2d_, random_field_);

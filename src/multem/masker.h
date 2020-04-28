@@ -166,6 +166,13 @@ namespace multem {
     const vector3& translation() const {
       return translation_;
     }
+    
+    /**
+     * Get the points
+     */
+    const std::array<vector2, 4>& points() const {
+      return points_;
+    }
 
     /**
      * Set the image size
@@ -656,6 +663,20 @@ namespace multem {
       : shape_(Cuboid) {
       set_image_size(xsize, ysize);
       set_pixel_size(pixel_size);
+    }
+
+    /**
+     * Get the cuboid masker
+     */
+    const CuboidMasker& cuboid_masker() const {
+      return cuboid_masker_;
+    }
+    
+    /**
+     * Get the cylinder masker
+     */
+    const CylinderMasker& cylinder_masker() const {
+      return cylinder_masker_;
     }
 
     /**
