@@ -490,8 +490,8 @@ namespace multem {
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
-        size_t j = index / xsize;
-        size_t i = index - j * xsize;
+        size_t i = index / xsize;
+        size_t j = index - i * xsize;
         return (i >= x0 && i < x1 && j >= y0 && j < y1);
       }
     };
@@ -534,8 +534,8 @@ namespace multem {
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
-        size_t j = index / xsize;
-        size_t i = index - j * xsize;
+        size_t i = index / xsize;
+        size_t j = index - i * xsize;
         double r1 = (j+0.5-yc)*(j+0.5-yc)+(zs-zc)*(zs-zc);
         double r2 = (j+0.5-yc)*(j+0.5-yc)+(ze-zc)*(ze-zc);
         return (i >= x0 && i < x1 && min(r1, r2) < radius2);
@@ -1041,8 +1041,8 @@ namespace multem {
         compute_mask(z_0, z_e);
 
         // Compute the Fourier transform of the Gaussian Random Field
-        /* compute_gaussian_random_field(12.011972100899177, 10.699707763944328); */
-        compute_gaussian_random_field(2.407358044855012, 5.063523512869212);
+        compute_gaussian_random_field(12.011972100899177, 10.699707763944328);
+//        compute_gaussian_random_field(2.407358044855012, 5.063523512869212);
 
         // Shift the grid
         mt::fft2_shift(grid_2d_, random_field_);
