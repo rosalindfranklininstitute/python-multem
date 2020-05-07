@@ -236,51 +236,51 @@ namespace multem {
       double y1 = y0 + size_[1];
       double z1 = z0 + size_[2];
      
-      // The y/z coords of the cuboid
-      points_[0] = { y0, z0 };
-      points_[1] = { y0, z1 };
-      points_[2] = { y1, z1 };
-      points_[3] = { y1, z0 };
+      // The x/z coords of the cuboid
+      points_[0] = { x0, z0 };
+      points_[1] = { x0, z1 };
+      points_[2] = { x1, z1 };
+      points_[3] = { x1, z0 };
 
       // Rotate coords
       detail::rotate2d_around_origin(
-          rotation_origin_[1], 
+          rotation_origin_[0], 
           rotation_origin_[2], 
           rotation_angle_ * M_PI / 180.0,
           points_[0][0], points_[0][1]);
       detail::rotate2d_around_origin(
-          rotation_origin_[1], 
+          rotation_origin_[0], 
           rotation_origin_[2], 
           rotation_angle_ * M_PI / 180.0,
           points_[1][0], points_[1][1]);
       detail::rotate2d_around_origin(
-          rotation_origin_[1], 
+          rotation_origin_[0], 
           rotation_origin_[2], 
           rotation_angle_ * M_PI / 180.0,
           points_[2][0], points_[2][1]);
       detail::rotate2d_around_origin(
-          rotation_origin_[1], 
+          rotation_origin_[0], 
           rotation_origin_[2], 
           rotation_angle_ * M_PI / 180.0,
           points_[3][0], points_[3][1]);
 
       // Translate the points
-      x0 += translation_[0];
-      x1 += translation_[0];
-      points_[0][0] += translation_[1];
+      y0 += translation_[1];
+      y1 += translation_[1];
+      points_[0][0] += translation_[0];
       points_[0][1] += translation_[2];
-      points_[1][0] += translation_[1];
+      points_[1][0] += translation_[0];
       points_[1][1] += translation_[2];
-      points_[2][0] += translation_[1];
+      points_[2][0] += translation_[0];
       points_[2][1] += translation_[2];
-      points_[3][0] += translation_[1];
+      points_[3][0] += translation_[0];
       points_[3][1] += translation_[2];
 
       // Compute the max and min
-      y0 = std::min(
+      x0 = std::min(
           std::min(points_[0][0], points_[1][0]), 
           std::min(points_[2][0], points_[3][0]));
-      y1 = std::max(
+      x1 = std::max(
           std::max(points_[0][0], points_[1][0]), 
           std::max(points_[2][0], points_[3][0]));
       z0 = std::min(
@@ -303,11 +303,11 @@ namespace multem {
       MULTEM_ASSERT(ze > zs);
 
       // Compute the min and max y
-      auto compute_ymin_and_ymax = [](double z, vector2 a, vector2 b, double &y0, double &y1) {
+      auto compute_xmin_and_xmax = [](double z, vector2 a, vector2 b, double &x0, double &x1) {
         if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
-          double y = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
-          y0 = std::min(y0, y);
-          y1 = std::max(y0, y);
+          double x = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
+          x0 = std::min(x0, x);
+          x1 = std::max(x0, x);
         }
       };
 
@@ -318,15 +318,15 @@ namespace multem {
       if (zs < zmax() && ze > zmin()) {
         
         // Compute min and max y
-        double x0 = xmin();
-        double x1 = xmax();
-				double y0 = ymax();
-				double y1 = ymin();
-        compute_ymin_and_ymax(zc, points_[0], points_[1], y0, y1);
-        compute_ymin_and_ymax(zc, points_[1], points_[2], y0, y1);
-        compute_ymin_and_ymax(zc, points_[2], points_[3], y0, y1);
-        compute_ymin_and_ymax(zc, points_[3], points_[0], y0, y1);
-        if (y1 > y0) {
+        double y0 = ymin();
+        double y1 = ymax();
+				double x0 = xmax();
+				double x1 = xmin();
+        compute_xmin_and_xmax(zc, points_[0], points_[1], x0, x1);
+        compute_xmin_and_xmax(zc, points_[1], points_[2], x0, x1);
+        compute_xmin_and_xmax(zc, points_[2], points_[3], x0, x1);
+        compute_xmin_and_xmax(zc, points_[3], points_[0], x0, x1);
+        if (x1 > x0) {
 
           // Convert to pixels
           x0 /= pixel_size_;
@@ -519,7 +519,7 @@ namespace multem {
       MULTEM_ASSERT(length > 0);
       MULTEM_ASSERT(radius > 0);
       offset_ = offset;
-      size_ = { length, 2*radius, 2*radius };
+      size_ = { 2*radius, length, 2*radius };
       update_geometry();
     }
 
@@ -552,25 +552,25 @@ namespace multem {
       double x1 = x0 + size_[0];
       double y1 = y0 + size_[1];
       double z1 = z0 + size_[2];
-      double yc = (y0 + y1) / 2.0;
+      double xc = (x0 + x1) / 2.0;
       double zc = (z0 + z1) / 2.0;
 
       // Rotate around the origin along the x axis
       detail::rotate2d_around_origin(
-          rotation_origin_[1], 
+          rotation_origin_[0], 
           rotation_origin_[2], 
           rotation_angle_ * M_PI / 180.0,
-          yc, zc);
+          xc, zc);
 
       // translate
-      x0 += translation_[0];
-      x1 += translation_[0];
-      yc += translation_[1];
+      xc += translation_[0];
+      y0 += translation_[1];
+      y1 += translation_[1];
       zc += translation_[2];
 
-      // Get the new y/z bounds
-      y0 = yc - size_[1] / 2.0;
-      y1 = yc + size_[1] / 2.0;
+      // Get the new x/z bounds
+      x0 = xc - size_[0] / 2.0;
+      x1 = xc + size_[0] / 2.0;
       z0 = zc - size_[2] / 2.0;
       z1 = zc + size_[2] / 2.0;
 
@@ -593,21 +593,21 @@ namespace multem {
       double y1 = ymax() / pixel_size_;
       double z0 = zmin() / pixel_size_;
       double z1 = zmax() / pixel_size_;
-      double yc = (y0 + y1) / 2.0;
+      double xc = (x0 + x1) / 2.0;
       double zc = (z0 + z1) / 2.0;
       zs /= pixel_size_;
       ze /= pixel_size_;
 
       // Compute the radius squared
-      double radius2 = std::pow(0.5 * size_[1] / pixel_size_, 2);
+      double radius2 = std::pow(0.5 * size_[0] / pixel_size_, 2);
 
       // Compute the slice mask
       if (zs < z1 && ze > z0) {
         for (std::size_t i = 0; i < xsize_; ++i) {
           for (std::size_t j = 0; j < ysize_; ++j) {
-            double r1 = (j+0.5-yc)*(j+0.5-yc)+(zs-zc)*(zs-zc);
-            double r2 = (j+0.5-yc)*(j+0.5-yc)+(ze-zc)*(ze-zc);
-            if (i >= x0 && i < x1 && std::min(r1, r2) < radius2) {
+            double r1 = (i+0.5-xc)*(i+0.5-xc)+(zs-zc)*(zs-zc);
+            double r2 = (i+0.5-xc)*(i+0.5-xc)+(ze-zc)*(ze-zc);
+            if (j >= y0 && j < y1 && std::min(r1, r2) < radius2) {
               *iterator = true;
             } else {
               *iterator = false;

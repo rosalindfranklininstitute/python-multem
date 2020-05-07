@@ -502,9 +502,9 @@ namespace multem {
     template <typename T>
     struct CylinderMaskSlice {
 
-      double x0;
-      double x1;
-      double yc;
+      double y0;
+      double y1;
+      double xc;
       double zc;
       double zs;
       double ze;
@@ -513,18 +513,18 @@ namespace multem {
       std::size_t ysize;
 
       CylinderMaskSlice(
-          double x0_,
-          double x1_,
-          double yc_,
+          double y0_,
+          double y1_,
+          double xc_,
           double zc_,
           double zs_,
           double ze_,
           double radius2_,
           std::size_t xsize_,
           std::size_t ysize_)
-        : x0(x0_),
-          x1(x1_),
-          yc(yc_),
+        : y0(y0_),
+          y1(y1_),
+          xc(xc_),
           zc(zc_),
           zs(zs_),
           ze(ze_),
@@ -536,9 +536,9 @@ namespace multem {
       T operator()(size_t index) const {
         size_t i = index / xsize;
         size_t j = index - i * xsize;
-        double r1 = (j+0.5-yc)*(j+0.5-yc)+(zs-zc)*(zs-zc);
-        double r2 = (j+0.5-yc)*(j+0.5-yc)+(ze-zc)*(ze-zc);
-        return (i >= x0 && i < x1 && min(r1, r2) < radius2);
+        double r1 = (i+0.5-xc)*(i+0.5-xc)+(zs-zc)*(zs-zc);
+        double r2 = (i+0.5-xc)*(i+0.5-xc)+(ze-zc)*(ze-zc);
+        return (j >= y0 && j < y1 && min(r1, r2) < radius2);
       }
     };
     
@@ -610,7 +610,7 @@ namespace multem {
       double y1 = masker.ymax() / masker.pixel_size();
       double z0 = masker.zmin() / masker.pixel_size();
       double z1 = masker.zmax() / masker.pixel_size();
-      double yc = (y0 + y1) / 2.0;
+      double xc = (x0 + x1) / 2.0;
       double zc = (z0 + z1) / 2.0;
       zs /= masker.pixel_size();
       ze /= masker.pixel_size();
@@ -626,9 +626,9 @@ namespace multem {
             indices + masker.image_size(),
             iterator, 
             CylinderMaskSlice<bool>(
-              x0, 
-              x1, 
-              yc, 
+              y0, 
+              y1, 
+              xc, 
               zc, 
               zs,
               ze,
