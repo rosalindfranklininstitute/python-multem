@@ -490,8 +490,8 @@ namespace multem {
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
-        size_t i = index / xsize;
-        size_t j = index - i * xsize;
+        size_t i = index / ysize;
+        size_t j = index - i * ysize;
         return (i >= x0 && i < x1 && j >= y0 && j < y1);
       }
     };
@@ -534,8 +534,8 @@ namespace multem {
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
-        size_t i = index / xsize;
-        size_t j = index - i * xsize;
+        size_t i = index / ysize;
+        size_t j = index - i * ysize;
         double r1 = (i+0.5-xc)*(i+0.5-xc)+(zs-zc)*(zs-zc);
         double r2 = (i+0.5-xc)*(i+0.5-xc)+(ze-zc)*(ze-zc);
         return (j >= y0 && j < y1 && min(r1, r2) < radius2);
@@ -616,7 +616,7 @@ namespace multem {
       ze /= masker.pixel_size();
 
       // Compute the radius squared
-      double radius2 = std::pow(0.5 * masker.size()[1] / masker.pixel_size(), 2);
+      double radius2 = std::pow(0.5 * masker.size()[0] / masker.pixel_size(), 2);
 
       // Compute the slice mask
       if (zs < z1 && ze > z0) {
@@ -703,8 +703,8 @@ namespace multem {
        */
       DEVICE_CALLABLE
       T operator()(size_t index) const {
-        size_t j = index / xsize;
-        size_t i = index - j * xsize;
+        size_t i = index / ysize;
+        size_t j = index - i * ysize;
 
         // Compute the power spectrum and phase
         double xd = (i-xsize/2.0) / xsize;
