@@ -548,17 +548,17 @@ namespace multem {
     template <typename Iterator>
     void compute_mask(const CuboidMasker &masker, double zs, double ze, Iterator iterator) {
 
-      // Compute the min and max y
-      auto compute_ymin_and_ymax = [](
+      // Compute the min and max x
+      auto compute_xmin_and_xmax = [](
           double z, 
           CuboidMasker::vector2 a, 
           CuboidMasker::vector2 b, 
-          double &y0, 
-          double &y1) {
+          double &x0, 
+          double &x1) {
         if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
-          double y = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
-          y0 = std::min(y0, y);
-          y1 = std::max(y0, y);
+          double x = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
+          x0 = std::min(x0, x);
+          x1 = std::max(x1, x);
         }
       };
 
@@ -566,14 +566,14 @@ namespace multem {
       double zc = (zs + ze) / 2.0;
         
       // Compute min and max y
-      double x0 = masker.xmin();
-      double x1 = masker.xmax();
-      double y0 = masker.ymax();
-      double y1 = masker.ymin();
-      compute_ymin_and_ymax(zc, masker.points()[0], masker.points()[1], y0, y1);
-      compute_ymin_and_ymax(zc, masker.points()[1], masker.points()[2], y0, y1);
-      compute_ymin_and_ymax(zc, masker.points()[2], masker.points()[3], y0, y1);
-      compute_ymin_and_ymax(zc, masker.points()[3], masker.points()[0], y0, y1);
+      double y0 = masker.ymin();
+      double y1 = masker.ymax();
+      double x0 = masker.xmax();
+      double x1 = masker.xmin();
+      compute_xmin_and_xmax(zc, masker.points()[0], masker.points()[1], x0, x1);
+      compute_xmin_and_xmax(zc, masker.points()[1], masker.points()[2], x0, x1);
+      compute_xmin_and_xmax(zc, masker.points()[2], masker.points()[3], x0, x1);
+      compute_xmin_and_xmax(zc, masker.points()[3], masker.points()[0], x0, x1);
 
       // Only do something if the slice is within range
       if (zs < masker.zmax() && ze > masker.zmin() & y1 > y0) {
