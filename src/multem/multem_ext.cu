@@ -1851,6 +1851,37 @@ namespace multem {
         });
   }
 
+  std::vector< std::pair<double, double> > compute_V_params(
+      std::string potential_type, 
+      std::size_t Z, 
+      int charge) { 
+    MULTEM_ASSERT(Z > 0);
+
+    auto potential_type_enum = detail::from_string<mt::ePotential_Type>(potential_type);
+
+    mt::Atom_Type<double, mt::e_host> atom_type;
+    mt::Atomic_Data atomic_data(potential_type_enum);
+    atomic_data.To_atom_type_CPU(Z, mt::c_Vrl, mt::c_nR, 0.0, atom_type);
+
+    MULTEM_ASSERT(atom_type.coef.size() > 0);
+    MULTEM_ASSERT(atom_type.coef[0].Vr.cl.size() == atom_type.coef[0].Vr.cnl.size());
+    std::vector< std::pair<double, double> > result(atom_type.coef[0].Vr.cl.size());
+    for (auto i = 0; i < result.size(); ++i) {
+      result[i].first = atom_type.coef[0].Vr.cl[i];
+      result[i].second = atom_type.coef[0].Vr.cnl[i];
+    }
+    return result;
+    /* std::vector<double> a(atom_type.c_Vr[0].cl.begin(), atom_type.c_Vr[0].cl.end()); */
+    /* std::vector<double> b(atom_type.c_Vr[0].cln.begin(), atom_type.c_Vr[0].cln.end()); */
+    /* MULTEM_ASSERT(a.size() == b.size()); */
+    /* std::vector< std::pair<double, double> > result(a.size()); */
+    /* for (auto i = 0; i < result.size(); ++i) { */
+    /*   result[i].first = a[i]; */
+    /*   result[i].second = b[i]; */
+    /* } */
+    /* return result; */
+  }
+
   bool is_gpu_available() {
     return mt::is_gpu_available();
   }

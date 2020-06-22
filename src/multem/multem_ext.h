@@ -794,6 +794,10 @@ namespace multem {
   double iehwgd_to_sigma(double value);
 
   std::vector<Atom> crystal_by_layers(const CrystalParameters &params);
+  std::vector< std::pair<double, double> > compute_V_params(
+      std::string potential_type, 
+      std::size_t Z, 
+      int charge);
 
 
   /**
