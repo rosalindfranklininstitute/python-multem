@@ -294,6 +294,9 @@ namespace multem {
     double obj_lens_dsf_sigma;
     int obj_lens_dsf_npoints;
 
+    // The phase shift
+    double phase_shift;
+
     // Zero defocus reference
     std::string obj_lens_zero_defocus_type;
     double obj_lens_zero_defocus_plane;
@@ -451,6 +454,7 @@ namespace multem {
         obj_lens_dsf_npoints(10),
         obj_lens_zero_defocus_type("Last"),
         obj_lens_zero_defocus_plane(0),
+        phase_shift(0),
         scanning_type("Line"),
         scanning_periodic(true),
         scanning_ns(10),

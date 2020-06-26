@@ -563,6 +563,7 @@ namespace pybind11 { namespace detail {
         self.obj_lens_dsf_npoints,
         self.obj_lens_zero_defocus_type,
         self.obj_lens_zero_defocus_plane,
+        self.phase_shift,
         self.detector,
         self.scanning_type,
         self.scanning_periodic,
@@ -711,32 +712,33 @@ namespace pybind11 { namespace detail {
       self.obj_lens_dsf_npoints = obj[108].cast< int >();
       self.obj_lens_zero_defocus_type = obj[109].cast< std::string >();
       self.obj_lens_zero_defocus_plane = obj[110].cast< double >();
-      self.detector = obj[111].cast< multem::STEMDetector >();
-      self.scanning_type = obj[112].cast< std::string >();
-      self.scanning_periodic = obj[113].cast< bool >();
-      self.scanning_ns = obj[114].cast< int >();
-      self.scanning_x0 = obj[115].cast< double >();
-      self.scanning_y0 = obj[116].cast< double >();
-      self.scanning_xe = obj[117].cast< double >();
-      self.scanning_ye = obj[118].cast< double >();
-      self.ped_nrot = obj[119].cast< double >();
-      self.ped_theta = obj[120].cast< double >();
-      self.hci_nrot = obj[121].cast< double >();
-      self.hci_theta = obj[122].cast< double >();
-      self.eels_Z = obj[123].cast< int >();
-      self.eels_E_loss = obj[124].cast< double >();
-      self.eels_collection_angle = obj[125].cast< double >();
-      self.eels_m_selection = obj[126].cast< int >();
-      self.eels_channelling_type = obj[127].cast< std::string >();
-      self.eftem_Z = obj[128].cast< int >();
-      self.eftem_E_loss = obj[129].cast< double >();
-      self.eftem_collection_angle = obj[130].cast< double >();
-      self.eftem_m_selection = obj[131].cast< int >();
-      self.eftem_channelling_type = obj[132].cast< std::string >();
-      self.output_area_ix_0 = obj[133].cast< int >();
-      self.output_area_iy_0 = obj[134].cast< int >();
-      self.output_area_ix_e = obj[135].cast< int >();
-      self.output_area_iy_e = obj[136].cast< int >();
+      self.phase_shift = obj[111].cast<double>();
+      self.detector = obj[112].cast< multem::STEMDetector >();
+      self.scanning_type = obj[113].cast< std::string >();
+      self.scanning_periodic = obj[114].cast< bool >();
+      self.scanning_ns = obj[115].cast< int >();
+      self.scanning_x0 = obj[116].cast< double >();
+      self.scanning_y0 = obj[117].cast< double >();
+      self.scanning_xe = obj[118].cast< double >();
+      self.scanning_ye = obj[119].cast< double >();
+      self.ped_nrot = obj[120].cast< double >();
+      self.ped_theta = obj[121].cast< double >();
+      self.hci_nrot = obj[122].cast< double >();
+      self.hci_theta = obj[123].cast< double >();
+      self.eels_Z = obj[124].cast< int >();
+      self.eels_E_loss = obj[125].cast< double >();
+      self.eels_collection_angle = obj[126].cast< double >();
+      self.eels_m_selection = obj[127].cast< int >();
+      self.eels_channelling_type = obj[128].cast< std::string >();
+      self.eftem_Z = obj[129].cast< int >();
+      self.eftem_E_loss = obj[130].cast< double >();
+      self.eftem_collection_angle = obj[131].cast< double >();
+      self.eftem_m_selection = obj[132].cast< int >();
+      self.eftem_channelling_type = obj[133].cast< std::string >();
+      self.output_area_ix_0 = obj[134].cast< int >();
+      self.output_area_iy_0 = obj[135].cast< int >();
+      self.output_area_ix_e = obj[136].cast< int >();
+      self.output_area_iy_e = obj[137].cast< int >();
       return self;
     }
 
@@ -870,6 +872,7 @@ namespace pybind11 { namespace detail {
       result["obj_lens_dsf_npoints"] = self.obj_lens_dsf_npoints;
       result["obj_lens_zero_defocus_type"] = self.obj_lens_zero_defocus_type;
       result["obj_lens_zero_defocus_plane"] = self.obj_lens_zero_defocus_plane;
+      result["phase_shift"] = self.phase_shift;
       //STEMDetector detector;
       result["scanning_type"] = self.scanning_type;
       result["scanning_periodic"] = self.scanning_periodic;
@@ -1138,6 +1141,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("obj_lens_dsf_npoints", &multem::Input::obj_lens_dsf_npoints)
     .def_readwrite("obj_lens_zero_defocus_type", &multem::Input::obj_lens_zero_defocus_type)
     .def_readwrite("obj_lens_zero_defocus_plane", &multem::Input::obj_lens_zero_defocus_plane)
+    .def_readwrite("phase_shift", &multem::Input::phase_shift)
     .def_readwrite("detector", &multem::Input::detector)
     .def_readwrite("scanning_type", &multem::Input::scanning_type)
     .def_readwrite("scanning_periodic", &multem::Input::scanning_periodic)

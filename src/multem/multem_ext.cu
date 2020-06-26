@@ -1465,6 +1465,9 @@ namespace multem {
       input_multislice.obj_lens.zero_defocus_plane = input.obj_lens_zero_defocus_plane;
       input_multislice.obj_lens.set_input_data(input_multislice.E_0, input_multislice.grid_2d);
 
+      // Set the phase shift
+      input_multislice.phase_shift = input.phase_shift;
+
       // ISTEM/STEM 
       if (input_multislice.is_scanning()) {
         input_multislice.scanning.type = detail::from_string<mt::eScanning_Type>(input.scanning_type);
@@ -1838,6 +1841,14 @@ namespace multem {
       default:
         break;
     }
+    
+    // Add phase shift
+    thrust::transform(
+          psi_out.begin(), 
+          psi_out.end(), 
+          psi_out.begin(), 
+          mt::functor::scale<thrust::complex<double> >(
+            exp(thrust::complex<double>(0, input_multislice.phase_shift))));
 
     // Syncronize stream
     stream.synchronize();
