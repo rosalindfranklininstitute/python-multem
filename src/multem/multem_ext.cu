@@ -661,15 +661,14 @@ namespace multem {
 
       double a1;
       double a2;
-      double a3;
       double m1;
       double m2;
-      double m3;
       double s1;
       double s2;
-      double s3;
       double xsize;
       double ysize;
+      double x_pixel_size;
+      double y_pixel_size;
 
       /**
        * Initialise
@@ -677,26 +676,24 @@ namespace multem {
       ComputeGaussianRandomFieldAmplitude(
             double a1_,
             double a2_,
-            double a3_,
             double m1_,
             double m2_,
-            double m3_,
             double s1_,
             double s2_,
-            double s3_,
             size_t xsize_, 
-            size_t ysize_)
+            size_t ysize_,
+            double x_pixel_size_,
+            double y_pixel_size_)
         : a1(a1_),
           a2(a2_),
-          a3(a3_),
           m1(m1_),
           m2(m2_),
-          m3(m3_),
           s1(s1_),
           s2(s2_),
-          s3(s3_),
           xsize(xsize_),
-          ysize(ysize_) {}
+          ysize(ysize_),
+          x_pixel_size(x_pixel_size_),
+          y_pixel_size(y_pixel_size_) {}
 
       /**
        * Compute the FT of the GRF at this index
@@ -707,16 +704,12 @@ namespace multem {
         size_t j = index - i * ysize;
 
         // Compute the power spectrum and phase
-        double xd = (i-xsize/2.0) / xsize;
-        double yd = (j-ysize/2.0) / ysize;
+        double xd = (i-xsize/2.0) / (x_pixel_size * xsize);
+        double yd = (j-ysize/2.0) / (y_pixel_size * ysize);
         double r = sqrt(xd*xd+yd*yd);
         double power = 
           a1 * exp(-0.5*(r-m1)*(r-m1)/(s1*s1)) +
-          a2 * exp(-0.5*(r-m2)*(r-m2)/(s2*s2)) +
-          a3 * exp(-0.5*(r-m3)*(r-m3)/(s3*s3)) +
-          a1 * exp(-0.5*(r+m1)*(r+m1)/(s1*s1)) +
-          a2 * exp(-0.5*(r+m2)*(r+m2)/(s2*s2)) +
-          a3 * exp(-0.5*(r+m3)*(r+m3)/(s3*s3));
+          a2 * exp(-0.5*(r-m2)*(r-m2)/(s2*s2));
         return sqrt(power);
       }
     };
@@ -800,13 +793,12 @@ namespace multem {
       thrust::default_random_engine gen_;
       double a1_;
       double a2_;
-      double a3_;
       double m1_;
       double m2_;
-      double m3_;
       double s1_;
       double s2_;
-      double s3_;
+      double x_pixel_size_;
+      double y_pixel_size_;
       mt::Grid_2d<FloatType> grid_2d_;
       mt::Vector<T_r, DeviceType> amplitude_;
       mt::Vector<T_c, DeviceType> fft_data_;
@@ -821,15 +813,14 @@ namespace multem {
        */
       IcePotentialApproximation()
         : gen_(std::random_device()()),
-          m1_(0.331581),
-          m2_(0.344871),
-          m3_(0.794620),
-          s1_(0.069125),
-          s2_(0.215473),
-          s3_(0.088319),
-          a1_(1.580558),
-          a2_(0.818132),
-          a3_(0.050048),
+          m1_(0),
+          m2_(1.0/2.88),
+          s1_(0.7312113),
+          s2_(0.0807801),
+          a1_(1.8129639),
+          a2_(7.2968907),
+          x_pixel_size_(1),
+          y_pixel_size_(1),
           fft_data_counter_(0),
           fft_2d_(NULL) {}
 
@@ -862,40 +853,6 @@ namespace multem {
       }
 
       /**
-       * Set the power spectrum parameters
-       */
-      void set_power_spectrum_parameters(
-          double a1,
-          double a2,
-          double a3,
-          double m1,
-          double m2,
-          double m3,
-          double s1,
-          double s2,
-          double s3) {
-        MULTEM_ASSERT(a1_ >= 0);
-        MULTEM_ASSERT(a2_ >= 0);
-        MULTEM_ASSERT(a3_ >= 0);
-        MULTEM_ASSERT(m1_ >= 0);
-        MULTEM_ASSERT(m2_ >= 0);
-        MULTEM_ASSERT(m3_ >= 0);
-        MULTEM_ASSERT(s1_ >= 0);
-        MULTEM_ASSERT(s2_ >= 0);
-        MULTEM_ASSERT(s3_ >= 0);
-        a1_ = a1;
-        a2_ = a2;
-        a3_ = a3;
-        m1_ = m1;
-        m2_ = m2;
-        m3_ = m3;
-        s1_ = s1;
-        s2_ = s2;
-        s3_ = s3;
-        fft_data_counter_ = 0;
-      }
-      
-      /**
        * Set the grid size
        */
       void set_grid(mt::Grid_2d<FloatType> grid_2d) {
@@ -907,6 +864,17 @@ namespace multem {
           fft_data_.resize(grid_2d.nx * grid_2d.ny);
           random_field_.resize(grid_2d.nx * grid_2d.ny);
           mask_.resize(grid_2d.nx * grid_2d.ny);
+          fft_data_counter_ = 0;
+        }
+      }
+
+      /**
+       * Set the pixel size
+       */
+      void set_pixel_size(double x_pixel_size, double y_pixel_size) {
+        if (x_pixel_size_ != x_pixel_size || y_pixel_size_ != y_pixel_size) {
+          x_pixel_size_ = x_pixel_size;
+          y_pixel_size_ = y_pixel_size;
           fft_data_counter_ = 0;
         }
       }
@@ -952,15 +920,14 @@ namespace multem {
               ComputeGaussianRandomFieldAmplitude<T_r>(
                 a1_, 
                 a2_, 
-                a3_, 
                 m1_, 
                 m2_, 
-                m3_, 
                 s1_, 
                 s2_, 
-                s3_, 
                 xsize, 
-                ysize));
+                ysize,
+                x_pixel_size_,
+                y_pixel_size_));
         }
 
         // We get two random fields for one calculation so we either use the
@@ -1018,6 +985,145 @@ namespace multem {
       }
 
       /**
+       * Compute the mean
+       */
+      double compute_mean(double density) const {
+        double M0 = 147.82; // Computed from MD water model
+        double Cv = compute_mean_correction(x_pixel_size_*y_pixel_size_);
+        double mean = M0 * Cv * density;
+        return mean;
+      };
+
+      /**
+       * Compute the sigma
+       */
+      double compute_sigma(double density) const {
+        double V0 = 10784.46; // Computed by calibrating agaist MD water model
+        double Cv = compute_variance_correction(x_pixel_size_*y_pixel_size_);
+        double var = V0 * Cv * density;
+        MULTEM_ASSERT(var >= 0);
+        return std::sqrt(var);
+      }
+
+      double compute_mean_correction(double pixel_area) const {
+        std::vector<double> X = {
+            0.00, 
+            0.01, 
+            0.04, 
+            0.09, 
+            0.16,
+            0.25, 
+            0.36, 
+            0.49, 
+            0.64, 
+            0.81,
+            1.00, 
+            1.21, 
+            1.44, 
+            1.69, 
+            1.96, 
+            2.25, 
+            2.56, 
+            2.89,
+            3.24,
+            3.61
+        };
+        std::vector<double> Y = {
+          1.0000000,
+          0.9891509,
+          0.9679373,
+          0.9344978,
+          0.8915310,
+          0.8362170,
+          0.7724122,
+          0.7001258,
+          0.6282896,
+          0.5533924,
+          0.4855970,
+          0.4221450,
+          0.3605762,
+          0.3062216,
+          0.2590715,
+          0.2166258,
+          0.1820263,
+          0.1510945,
+          0.0132324,
+          0.0562022,
+        };
+        MULTEM_ASSERT(X.size() == Y.size());
+        return interpolate(pixel_area, X.begin(), X.end(), Y.begin());
+      }
+
+      /**
+       * Compute the pixel variance correction
+       */
+      double compute_variance_correction(double pixel_area) const {
+        std::vector<double> X = {
+            0.00, 
+            0.01, 
+            0.04, 
+            0.09, 
+            0.16,
+            0.25, 
+            0.36, 
+            0.49, 
+            0.64, 
+            0.81,
+            1.00, 
+            1.21, 
+            1.44, 
+            1.69, 
+            1.96, 
+            2.25, 
+            2.56, 
+            2.89,
+            3.24,
+            3.61
+        };
+        std::vector<double> Y = {
+            1.0000000,
+            0.9541554, 
+            0.8166216, 
+            0.6689699, 
+            0.5352830, 
+            0.4072256, 
+            0.2966287, 
+            0.2091032, 
+            0.1423872, 
+            0.0937952, 
+            0.0613248, 
+            0.0384087, 
+            0.0243265, 
+            0.0154021, 
+            0.0096818, 
+            0.0059035, 
+            0.0033408, 
+            0.0021511, 
+            0.0002175, 
+            0.0001382, 
+        };
+        MULTEM_ASSERT(X.size() == Y.size());
+        return interpolate(pixel_area, X.begin(), X.end(), Y.begin());
+      }
+
+      /**
+       * Interpolate
+       */
+      template <typename Iterator>
+      double interpolate(double x, Iterator xfirst, Iterator xlast, Iterator yfirst) const {
+        std::size_t size = xlast - xfirst;
+        std::size_t index = 0;
+        if (x > *xfirst) {
+          while ((index < size-1) && (x > *(xfirst+index))) ++index;
+        }
+        double x0 = *(xfirst+index);
+        double y0 = *(yfirst+index);
+        double x1 = *(xfirst+index+1);
+        double y1 = *(yfirst+index+1);
+        return (x < x0 ? y0 : (x > x1 ? y1 : (y0 + (y1 - y0)*(x - x0)/(x1 - x0))));
+      }
+
+      /**
        * Compute the Gamma random field and add to input potential
        */
       void operator()(
@@ -1040,9 +1146,14 @@ namespace multem {
         // Compute the mask
         compute_mask(z_0, z_e);
 
+        double density = 0.0336; // Number of particles per A^3
+
+        // Compute the mean and sigma
+        double mean = compute_mean(thickness*density);
+        double sigma = compute_sigma(thickness*density);
+
         // Compute the Fourier transform of the Gaussian Random Field
-        compute_gaussian_random_field(12.011972100899177, 10.699707763944328);
-//        compute_gaussian_random_field(2.407358044855012, 5.063523512869212);
+        compute_gaussian_random_field(mean, sigma);
 
         // Shift the grid
         mt::fft2_shift(grid_2d_, random_field_);
@@ -1135,12 +1246,17 @@ namespace multem {
       // Setup the multislice simulation 
       mt::Multislice<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
-     
+   
+      // Compute the pixel sizes
+      double x_pixel_size = input_multislice.atoms.l_x / input_multislice.grid_2d.nx;
+      double y_pixel_size = input_multislice.atoms.l_y / input_multislice.grid_2d.ny;
+
       // Setup the ice potential approximation
       IcePotentialApproximation<FloatType, DeviceType> potential_function;
       potential_function.set_fft_2d(&fft_2d);
       potential_function.set_grid(input_multislice.grid_2d);
       potential_function.set_masker(masker);
+      potential_function.set_pixel_size(x_pixel_size, y_pixel_size);
       multislice.set_potential_function(&potential_function);
 
       // Set the input data
