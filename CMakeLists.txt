@@ -30,6 +30,10 @@ pybind11_add_module(multem_ext
 # Ensure we are using C++11
 target_compile_features(multem_ext PUBLIC cxx_std_11)
 
+# Not specifying CUDA architecture throws and error.
+# Setting this option does not pass arch flag to compiler
+set_property(TARGET multem_ext PROPERTY CUDA_ARCHITECTURES OFF)
+
 # Set the include directory
 target_include_directories(multem_ext PUBLIC 
   src
