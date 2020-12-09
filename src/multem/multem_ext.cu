@@ -775,7 +775,7 @@ namespace multem {
       template <typename T>
       DEVICE_CALLABLE
       T operator()(const T r, const T p) const {
-        return (p > 0 ? p : p + r);
+        return p+r;//(p > 0 ? p : p + r);
       }
     };
 
