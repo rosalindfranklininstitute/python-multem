@@ -25,6 +25,15 @@ PYBIND11_MAKE_OPAQUE(std::vector<multem::Atom>);
 namespace pybind11 { namespace detail {
 
   /**
+   * A wrapper around the mask compute funcion
+   */
+  py::array_t<int> Masker_compute(const multem::Masker &masker, double zs, double ze) {
+    std::vector<int> mask(masker.image_size());
+    masker.compute(zs, ze, mask.begin());
+    return py::array_t<int>(mask.size(), mask.data());
+  }
+
+  /**
    * An iterator wrapper that extracts the pybind iterator into the desired 
    * C++ type. Importantly, the GIL is acquired whenever python code is called.
    */
@@ -1217,13 +1226,12 @@ PYBIND11_MODULE(multem_ext, m)
 
   // Wrap the multem::Masker class
   py::class_<multem::Masker>(m, "Masker")
+    .def(py::init<>())
     .def(py::init<std::size_t, std::size_t, double>())
     .def("xsize", &multem::Masker::xsize)
     .def("ysize", &multem::Masker::ysize)
     .def("pixel_size", &multem::Masker::pixel_size)
     .def("shape", &multem::Masker::shape)
-    .def("offset", &multem::Masker::offset)
-    .def("size", &multem::Masker::size)
     .def("xmin", &multem::Masker::xmin)
     .def("ymin", &multem::Masker::ymin)
     .def("zmin", &multem::Masker::zmin)
@@ -1240,6 +1248,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def("set_cylinder", &multem::Masker::set_cylinder)
     .def("set_rotation", &multem::Masker::set_rotation)
     .def("set_translation", &multem::Masker::set_translation)
+    .def("compute", &pybind11::detail::Masker_compute)
     ;
 
   // Expose the simulation function
