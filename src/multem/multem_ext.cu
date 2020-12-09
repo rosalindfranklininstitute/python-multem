@@ -502,43 +502,125 @@ namespace multem {
     template <typename T>
     struct CylinderMaskSlice {
 
-      double y0;
-      double y1;
-      double xc;
-      double zc;
+      double Ax;
+      double Ay;
+      double Az;
+      double Bx;
+      double By;
+      double Bz;
       double zs;
       double ze;
-      double radius2;
+      double length;
+      double pixel_size;
       std::size_t xsize;
       std::size_t ysize;
+      CylinderMasker::Parameters params0;
+      CylinderMasker::Parameters params1;
+      CylinderMasker::Parameters params2;
+      CylinderMasker::Parameters params3;
+      CylinderMasker::Parameters params4;
+      CylinderMasker::Parameters params5;
+      CylinderMasker::Parameters params6;
+      CylinderMasker::Parameters params7;
+      CylinderMasker::Parameters params8;
+      CylinderMasker::Parameters params9;
+      std::size_t num_params;
 
       CylinderMaskSlice(
-          double y0_,
-          double y1_,
-          double xc_,
-          double zc_,
+          double Ax_,
+          double Ay_,
+          double Az_,
+          double Bx_,
+          double By_,
+          double Bz_,
           double zs_,
           double ze_,
-          double radius2_,
+          double pixel_size_,
           std::size_t xsize_,
-          std::size_t ysize_)
-        : y0(y0_),
-          y1(y1_),
-          xc(xc_),
-          zc(zc_),
+          std::size_t ysize_,
+          const std::array<CylinderMasker::Parameters,10>& params_)
+        : Ax(Ax_),
+          Ay(Ay_),
+          Az(Az_),
+          Bx(Bx_),
+          By(By_),
+          Bz(Bz_),
           zs(zs_),
           ze(ze_),
-          radius2(radius2_),
+          length(std::sqrt((Bx-Ax)*(Bx-Ax)+(By-Ay)*(By-Ay)+(Bz-Az)*(Bz-Az))),
+          pixel_size(pixel_size_),
           xsize(xsize_),
-          ysize(ysize_) {}
+          ysize(ysize_),
+          num_params(10) {
+            params0 = params_[0];
+            params1 = params_[1];
+            params2 = params_[2];
+            params3 = params_[3];
+            params4 = params_[4];
+            params5 = params_[5];
+            params6 = params_[6];
+            params7 = params_[7];
+            params8 = params_[8];
+            params9 = params_[9];
+      }
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
+
         size_t i = index / ysize;
         size_t j = index - i * ysize;
-        double r1 = (i+0.5-xc)*(i+0.5-xc)+(zs-zc)*(zs-zc);
-        double r2 = (i+0.5-xc)*(i+0.5-xc)+(ze-zc)*(ze-zc);
-        return (j >= y0 && j < y1 && min(r1, r2) < radius2);
+
+        // The coordinate in microscope space
+        double Px = (i + 0.5) * pixel_size;
+        double Py = (j + 0.5) * pixel_size;
+        double Pz = (zs + ze) / 2.0;
+
+        // Compute the position along the cylinder
+        //
+        // t = (P-A).(B-A) / |B-A|^2
+        double t = ((Px - Ax) * (Bx - Ax) + 
+                    (Py - Ay) * (By - Ay) + 
+                    (Pz - Az) * (Bz - Az)) / (length*length); 
+
+        // Compute the offset and radius which is a function of the distance
+        // along the cylinder
+        double u = t * (num_params - 1);
+        int pindex = max(0, min((int)num_params-1, (int)floor(u)));
+        u = u - pindex;
+        
+        // Compute the offset and radius
+        CylinderMasker::Parameters p = (
+            pindex == 0 ? params0 :
+            pindex == 1 ? params1 :
+            pindex == 2 ? params2 :
+            pindex == 3 ? params3 :
+            pindex == 4 ? params4 : 
+            pindex == 5 ? params5 : 
+            pindex == 6 ? params6 : 
+            pindex == 7 ? params7 : 
+            pindex == 8 ? params8 : 
+            params9);
+        double u2 = u*u;
+        double u3 = u2*u;
+        double x_offset = p.x_a*u3 + p.x_b*u2 + p.x_c*u + p.x_d;
+        double y_offset = p.y_a*u3 + p.y_b*u2 + p.y_c*u + p.y_d;
+        double z_offset = p.z_a*u3 + p.z_b*u2 + p.z_c*u + p.z_d;
+        double radius   = p.r_a*u3 + p.r_b*u2 + p.r_c*u + p.r_d;
+
+        // Compute the point along the cylinder and then the distance to the
+        // cylinder. The offset here is because we can incorporate local
+        // deformations of the cylinder as a function of the distance along
+        // the axis of the cylinder
+        //
+        // C = A + t * (B - A)
+        // d =  | P - C |
+        double Cx = Ax + t * (Bx - Ax) + x_offset;
+        double Cy = Ay + t * (By - Ay) + y_offset;
+        double Cz = Az + t * (Bz - Az) + z_offset;
+        double d2 = (Px - Cx)*(Px - Cx) + (Py - Cy)*(Py - Cy) + (Pz - Cz)*(Pz - Cz);
+
+        // Set if the point is within the cylinder
+        return (t >= 0) && (t < 1) && (d2 <= (radius*radius));
       }
     };
     
@@ -603,37 +685,26 @@ namespace multem {
     void compute_mask(const CylinderMasker &masker, double zs, double ze, Iterator iterator) {
       MULTEM_ASSERT(ze > zs);
 
-      // Convert to pixels
-      double x0 = masker.xmin() / masker.pixel_size();
-      double x1 = masker.xmax() / masker.pixel_size();
-      double y0 = masker.ymin() / masker.pixel_size();
-      double y1 = masker.ymax() / masker.pixel_size();
-      double z0 = masker.zmin() / masker.pixel_size();
-      double z1 = masker.zmax() / masker.pixel_size();
-      double xc = (x0 + x1) / 2.0;
-      double zc = (z0 + z1) / 2.0;
-      zs /= masker.pixel_size();
-      ze /= masker.pixel_size();
-
-      // Compute the radius squared
-      double radius2 = std::pow(0.5 * masker.size()[0] / masker.pixel_size(), 2);
-
-      // Compute the slice mask
-      if (zs < z1 && ze > z0) {
+      // Only do something if the slice is within range
+      if (zs < masker.zmax() && ze > masker.zmin()) {
         thrust::counting_iterator<size_t> indices(0);
         thrust::transform(
             indices,
             indices + masker.image_size(),
             iterator, 
             CylinderMaskSlice<bool>(
-              y0, 
-              y1, 
-              xc, 
-              zc, 
+              masker.A()[0], 
+              masker.A()[1], 
+              masker.A()[2], 
+              masker.B()[0], 
+              masker.B()[1], 
+              masker.B()[2], 
               zs,
               ze,
-              radius2,
-              masker.xsize(), masker.ysize()));
+              masker.pixel_size(),
+              masker.xsize(), 
+              masker.ysize(),
+              masker.parameters()));
       } else {
         thrust::fill(iterator, iterator + masker.image_size(), 0);
       }
@@ -1811,8 +1882,8 @@ namespace multem {
     // because if multem has no atoms it gets confused. By adding an atom at
     // the minimum and maximum Z locations we make multem create slices between
     // those two atoms.
-    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmin(), 0.085, 1, 0, 0));
-    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmax(), 0.085, 1, 0, 0));
+    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmin(), 0, 1, 0, 0));
+    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmax(), 0, 1, 0, 0));
 
     // Initialise the system configuration and input structures 
     auto system_conf = detail::read_system_configuration(config);
@@ -2276,7 +2347,7 @@ namespace multem {
     masker.set_pixel_size(0.5);
     masker.set_cuboid({ 10, 11, 12 }, { 20, 30, 40 });
     masker.set_translation({4, 5, 6});
-    masker.set_rotation({10, 11, 12}, 90);
+    masker.set_rotation({10, 11, 12}, { 0, M_PI / 2.0, 0 });
 
     // Check stuff
     MULTEM_ASSERT(masker.xsize() == 100);
@@ -2284,22 +2355,16 @@ namespace multem {
     MULTEM_ASSERT(masker.image_size() == 200*100);
     MULTEM_ASSERT(masker.pixel_size() == 0.5);
     MULTEM_ASSERT(masker.shape() == Masker::Cuboid);
-    MULTEM_ASSERT(masker.offset()[0] ==  10);
-    MULTEM_ASSERT(masker.offset()[1] ==  11);
-    MULTEM_ASSERT(masker.offset()[2] ==  12);
-    MULTEM_ASSERT(masker.size()[0] == 20);
-    MULTEM_ASSERT(masker.size()[1] == 30);
-    MULTEM_ASSERT(masker.size()[2] == 40);
-    MULTEM_ASSERT(masker.xmin() == (10 + 4));
-    MULTEM_ASSERT(masker.ymin() == (11 - 40 + 5));
-    MULTEM_ASSERT(masker.zmin() == (12 + 6));
-    MULTEM_ASSERT(masker.xmax() == (10 + 20 + 4));
-    MULTEM_ASSERT(masker.ymax() == (11 + 5));
-    MULTEM_ASSERT(masker.zmax() == (12 + 30 + 6));
+    MULTEM_ASSERT(std::abs(masker.xmin() - (10 - 40 + 4)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.ymin() - (11 + 5)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmin() - (12 + 6)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.xmax() - (10 + 4)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.ymax() - (11 + 5 + 30)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmax() - (12 + 20 + 6)) < 1e-5);
     MULTEM_ASSERT(masker.rotation_origin()[0] == 10);
     MULTEM_ASSERT(masker.rotation_origin()[1] == 11);
     MULTEM_ASSERT(masker.rotation_origin()[2] == 12);
-    MULTEM_ASSERT(masker.rotation_angle() == 90);
+    MULTEM_ASSERT(std::abs(masker.rotation_angle() - M_PI/2) < 1e-5);
     MULTEM_ASSERT(masker.translation()[0] == 4);
     MULTEM_ASSERT(masker.translation()[1] == 5);
     MULTEM_ASSERT(masker.translation()[2] == 6);
@@ -2318,6 +2383,9 @@ namespace multem {
               z >= masker.zmin() && z < masker.zmax()) {
             value = true;
           }
+          if (mask[j+i*masker.ysize()] != value) {
+            std::cout << x << ", " << y << ", " << z << ", " << value << std::endl;
+          }
           MULTEM_ASSERT(mask[j+i*masker.ysize()] == value);
         }
       }
@@ -2333,9 +2401,9 @@ namespace multem {
     Masker masker;
     masker.set_image_size(100, 200);
     masker.set_pixel_size(0.5);
-    masker.set_cylinder({ 10, 11, 12 }, 50, 12);
+    masker.set_cylinder({ 10, 11, 12 }, { 0, 1, 0 }, 50, {12}, {0}, {0});
     masker.set_translation({4, 5, 6});
-    masker.set_rotation({10, 11, 12}, 90);
+    masker.set_rotation({10, 11, 12}, { 0, M_PI / 2.0, 0 });
 
     // Check stuff
     MULTEM_ASSERT(masker.xsize() == 100);
@@ -2343,22 +2411,16 @@ namespace multem {
     MULTEM_ASSERT(masker.image_size() == 200*100);
     MULTEM_ASSERT(masker.pixel_size() == 0.5);
     MULTEM_ASSERT(masker.shape() == Masker::Cylinder);
-    MULTEM_ASSERT(masker.offset()[0] ==  10);
-    MULTEM_ASSERT(masker.offset()[1] ==  11);
-    MULTEM_ASSERT(masker.offset()[2] ==  12);
-    MULTEM_ASSERT(masker.size()[0] == 50);
-    MULTEM_ASSERT(masker.size()[1] == 2*12);
-    MULTEM_ASSERT(masker.size()[2] == 2*12);
-    MULTEM_ASSERT(masker.xmin() == (10 + 4));
-    MULTEM_ASSERT(masker.ymin() == (11 - 2*12 + 5));
-    MULTEM_ASSERT(masker.zmin() == (12 + 6));
-    MULTEM_ASSERT(masker.xmax() == (10 + 50 + 4));
-    MULTEM_ASSERT(masker.ymax() == (11 + 5));
-    MULTEM_ASSERT(masker.zmax() == (12 + 2*12 + 6));
+    MULTEM_ASSERT(std::abs(masker.xmin() - (10 + 4)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.ymin() - (11 + 5)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmin() - (12 + 6)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.xmax() - (10 + 4)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.ymax() - (11 + 5 + 50)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmax() - (12 + 6)) < 1e-5);
     MULTEM_ASSERT(masker.rotation_origin()[0] == 10);
     MULTEM_ASSERT(masker.rotation_origin()[1] == 11);
     MULTEM_ASSERT(masker.rotation_origin()[2] == 12);
-    MULTEM_ASSERT(masker.rotation_angle() == 90);
+    MULTEM_ASSERT(std::abs(masker.rotation_angle() - M_PI/2) < 1e-5);
     MULTEM_ASSERT(masker.translation()[0] == 4);
     MULTEM_ASSERT(masker.translation()[1] == 5);
     MULTEM_ASSERT(masker.translation()[2] == 6);
@@ -2369,16 +2431,14 @@ namespace multem {
       masker.compute(z, z+1, mask.begin());
       for (std::size_t j = 0; j < 200; ++j) {
         for (std::size_t i = 0; i < 100; ++i) {
-          double x = i * masker.pixel_size();
+          double x = (i + 0.5) * masker.pixel_size();
           double y = (j + 0.5) * masker.pixel_size();
-          double yc = (masker.ymin() + masker.ymax()) / 2.0;
-          double zc = (masker.zmin() + masker.zmax()) / 2.0;
-          double d1 = std::sqrt((y-yc)*(y-yc)+(z-zc)*(z-zc));
-          double d2 = std::sqrt((y-yc)*(y-yc)+(z+1-zc)*(z+1-zc));
+          double xc = 10 + 4;
+          double zc = 12 + 6;
+          double d = std::sqrt((x-xc)*(x-xc)+(z+0.5-zc)*(z+0.5-zc));
           double radius = 12;
           bool value = false;
-          if (x >= masker.xmin() && x < masker.xmax() && 
-              std::min(d1,d2) < radius) {
+          if (y >= masker.ymin() && y < masker.ymax() && d < radius) {
             value = true;
           }
           MULTEM_ASSERT(mask[j+i*masker.ysize()] == value);
