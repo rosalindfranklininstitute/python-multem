@@ -1,8 +1,10 @@
 import multem
 import numpy
 import pickle
+import time
 from cu001_crystal import cu001_crystal
 
+st = time.time()
 print("GPU available: %s" % multem.is_gpu_available())
 
 input_multislice = multem.Input()
@@ -76,7 +78,7 @@ input_multislice.temporal_spatial_incoh = "Temporal_Spatial"
 
 # Condenser lens
 # source spread function
-ssf_sigma = multem.mrad_to_sigma(input_multislice.E_0, 0.02)
+# ssf_sigma = multem.mrad_to_sigma(input_multislice.E_0, 0.02)
 # These lines are commented due to there being a bug in the matlab code
 # input_multislice.cond_lens_ssf_sigma = ssf_sigma
 # input_multislice.cond_lens_ssf_npoints = 4
@@ -94,9 +96,9 @@ input_multislice.obj_lens_inner_aper_ang = 0.0
 input_multislice.obj_lens_outer_aper_ang = 0.0
 
 # defocus spread function
-dsf_sigma = multem.iehwgd_to_sigma(32)
-input_multislice.obj_lens_dsf_sigma = dsf_sigma
-input_multislice.obj_lens_dsf_npoints = 5
+# dsf_sigma = multem.iehwgd_to_sigma(32)
+# input_multislice.obj_lens_dsf_sigma = dsf_sigma
+# input_multislice.obj_lens_dsf_npoints = 5
 
 # zero defocus reference
 input_multislice.obj_lens_zero_defocus_type = "First"
@@ -104,7 +106,9 @@ input_multislice.obj_lens_zero_defocus_plane = 0
 
 # Do the simulation
 output_multislice = multem.simulate(system_conf, input_multislice)
+print("Time: %.2f" % (time.time() - st))
 
 data = {"input": input_multislice.asdict(), "output": output_multislice.asdict()}
 
 pickle.dump(data, open("simulated_HRTEM.p", "wb"), protocol=2)
+

@@ -2,6 +2,17 @@ import multem
 
 
 def cu001_crystal(na, nb, nc, ncu, rms3d):
+    lx = 100
+    ly = 100
+    lz = 100
+    a = 100
+    b = 100
+    c = 100
+    dz = 5
+    atoms = multem.AtomList([
+        (29, i, i, i, 0.08, 1, 0, 0) for i in range(100)])
+    
+    return atoms, lx, ly, lz, a, b, c, dz
 
     params = multem.CrystalParameters()
     params.na = na

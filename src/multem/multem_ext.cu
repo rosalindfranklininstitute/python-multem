@@ -29,6 +29,127 @@
 namespace multem {
 
   namespace detail {
+  
+    std::string to_string(const mt::System_Configuration &self, const std::string &prefix="") {
+      std::ostringstream msg;
+      msg << prefix << "precision:   " << self.precision << "\n";
+      msg << prefix << "device:      " << self.device << "\n";
+      msg << prefix << "cpu_ncores:  " << self.precision << "\n";
+      msg << prefix << "cpu_nthread: " << self.precision << "\n";
+      msg << prefix << "gpu_device:  " << self.precision << "\n";
+      msg << prefix << "gpu_nstream: " << self.precision << "\n";
+      return msg.str();
+    }
+    
+    template <typename T>
+    std::string to_string(const mt::Lens<T> &self, const std::string &prefix="") {
+      std::ostringstream msg;
+      msg << prefix << "m: " << self.m << "\n";
+      msg << prefix << "c_10: " << self.c_10 << "\n";
+      msg << prefix << "c_12: " << self.c_12 << "\n";
+      msg << prefix << "phi_12: " << self.phi_12 << "\n";
+      msg << prefix << "c_21: " << self.c_21 << "\n";
+      msg << prefix << "phi_21: " << self.phi_21 << "\n";
+      msg << prefix << "c_23: " << self.c_23 << "\n";
+      msg << prefix << "phi_23: " << self.phi_23 << "\n";
+      msg << prefix << "c_30: " << self.c_30 << "\n";
+      msg << prefix << "c_32: " << self.c_32 << "\n";
+      msg << prefix << "phi_32: " << self.phi_32 << "\n";
+      msg << prefix << "c_34: " << self.c_34 << "\n";
+      msg << prefix << "phi_34: " << self.phi_34 << "\n";
+      msg << prefix << "c_41: " << self.c_41 << "\n";
+      msg << prefix << "phi_41: " << self.phi_41 << "\n";
+      msg << prefix << "c_43: " << self.c_43 << "\n";
+      msg << prefix << "phi_43: " << self.phi_43 << "\n";
+      msg << prefix << "c_45: " << self.c_45 << "\n";
+      msg << prefix << "phi_45: " << self.phi_45 << "\n";
+      msg << prefix << "c_50: " << self.c_50 << "\n";
+      msg << prefix << "c_52: " << self.c_52 << "\n";
+      msg << prefix << "phi_52: " << self.phi_52 << "\n";
+      msg << prefix << "c_54: " << self.c_54 << "\n";
+      msg << prefix << "phi_54: " << self.phi_54 << "\n";
+      msg << prefix << "c_56: " << self.c_56 << "\n";
+      msg << prefix << "phi_56: " << self.phi_56 << "\n";
+      msg << prefix << "inner_aper_ang: " << self.inner_aper_ang << "\n";
+      msg << prefix << "outer_aper_ang: " << self.outer_aper_ang << "\n";
+      /* msg << prefix << "ti_a: " << self.ti_a << "\n"; */
+      /* msg << prefix << "ti_sigma: " << self.ti_sigma << "\n"; */
+      /* msg << prefix << "ti_beta: " << self.ti_beta << "\n"; */
+      /* msg << prefix << "ti_npts: " << self.ti_npts << "\n"; */
+      /* msg << prefix << "ti_iehwgd: " << self.ti_iehwgd << "\n"; */
+      /* msg << prefix << "si_a: " << self.si_a << "\n"; */
+      /* msg << prefix << "si_sigma: " << self.si_sigma << "\n"; */
+      /* msg << prefix << "si_beta: " << self.si_beta << "\n"; */
+      /* msg << prefix << "si_rad_npts: " << self.si_rad_npts << "\n"; */
+      /* msg << prefix << "si_azm_npts: " << self.si_azm_npts << "\n"; */
+      /* msg << prefix << "si_iehwgd: " << self.si_iehwgd << "\n"; */
+      /* msg << prefix << "si_theta_c: " << self.si_theta_c << "\n"; */
+      msg << prefix << "zero_defocus_type: " << self.zero_defocus_type << "\n";
+      msg << prefix << "zero_defocus_plane: " << self.zero_defocus_plane << "\n";
+      msg << prefix << "lambda: " << self.lambda << "\n";
+      return msg.str();
+    }
+    
+    template <typename T>
+    std::string to_string(const mt::Input_Multislice<T> &self, const std::string &prefix="") {
+      std::ostringstream msg;
+      msg << prefix << "system_conf" << "\n";
+      msg << prefix << to_string(self.system_conf, " -");
+      msg << prefix << "interaction_model: " << self.interaction_model << "\n";
+      msg << prefix << "potential_type: " << self.potential_type << "\n";
+      msg << prefix << "pn_model: " << self.pn_model << "\n";
+      msg << prefix << "pn_coh_contrib: " << self.pn_coh_contrib << "\n";
+      msg << prefix << "pn_single_conf: " << self.pn_single_conf << "\n";
+      /* msg << prefix << "pn_dim: " << self.pn_dim << "\n"; */
+      msg << prefix << "fp_dist: " << self.fp_dist << "\n";
+      msg << prefix << "pn_seed: " << self.pn_seed << "\n";
+      msg << prefix << "pn_nconf: " << self.pn_nconf << "\n";
+      msg << prefix << "fp_iconf_0: " << self.fp_iconf_0 << "\n";
+      /* msg << prefix << Helpers<mt::AtomData<T>>::tate(self.get_atoms); */
+      msg << prefix << "is_crystal: " << self.is_crystal << "\n";
+      msg << prefix << "spec_rot_theta: " << self.spec_rot_theta << "\n";
+      /* msg << prefix << "spec_rot_u0: " << self.spec_rot_u0 << "\n"; */
+      msg << prefix << "spec_rot_center_type: " << self.spec_rot_center_type << "\n";
+      /* msg << prefix << "spec_rot_center_p: " << self.spec_rot_center_p << "\n"; */
+      msg << prefix << "thick_type: " << self.thick_type << "\n";
+      /* msg << prefix << "thick: " << self.thick << "\n"; */
+      msg << prefix << "potential_slicing: " << self.potential_slicing << "\n";
+      /* msg << prefix << "grid_2d: " << self.grid_2d << "\n"; */
+      /* msg << prefix << "output_area: " << self.output_area << "\n"; */
+      msg << prefix << "simulation_type: " << self.simulation_type << "\n";
+      msg << prefix << "iw_type: " << self.iw_type << "\n";
+      /* msg << prefix << "iw_psi: " << self.iw_psi << "\n"; */
+      /* msg << prefix << "iw_x: " << self.iw_x << "\n"; */
+      /* msg << prefix << "iw_y: " << self.iw_y << "\n"; */
+      msg << prefix << "E_0: " << self.E_0 << "\n";
+      msg << prefix << "lambda: " << self.lambda << "\n";
+      msg << prefix << "theta: " << self.theta << "\n";
+      msg << prefix << "phi: " << self.phi << "\n";
+      msg << prefix << "illumination_model: " << self.illumination_model << "\n";
+      msg << prefix << "temporal_spatial_incoh: " << self.temporal_spatial_incoh << "\n";
+      msg << prefix << "cond_lens" << "\n";
+      msg << prefix << to_string(self.cond_lens, " -");
+      msg << prefix << "obj_lens" << "\n";
+      msg << prefix << to_string(self.obj_lens, " -");
+      /* msg << prefix << self.scanning; */
+      /* msg << prefix << self.detector; */
+      /* msg << prefix << self.eels_fr; */
+      msg << prefix << "operation_mode: " << self.operation_mode << "\n";
+      msg << prefix << "slice_storage: " << self.slice_storage << "\n";
+      msg << prefix << "reverse_multislice: " << self.reverse_multislice << "\n";
+      msg << prefix << "mul_sign: " << self.mul_sign << "\n";
+      msg << prefix << "Vrl: " << self.Vrl << "\n";
+      msg << prefix << "nR: " << self.nR << "\n";
+      msg << prefix << "nrot: " << self.nrot << "\n";
+      msg << prefix << "cdl_var_type: " << self.cdl_var_type << "\n";
+      /* msg << prefix << "cdl_var: " << self.cdl_var << "\n"; */
+      /* msg << prefix << "iscan: " << self.iscan << "\n"; */
+      /* msg << prefix << "beam_x: " << self.beam_x << "\n"; */
+      /* msg << prefix << "beam_y: " << self.beam_y << "\n"; */
+      msg << prefix << "islice: " << self.islice << "\n";
+      msg << prefix << "dp_Shift: " << self.dp_Shift << "\n";
+      return msg.str();
+    }
 
     /**
      * Template type containing enum string info
@@ -1268,6 +1389,7 @@ namespace multem {
       // Setup the multislice simulation 
       mt::Multislice<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
+      std::cout << to_string(input_multislice) << std::endl;
 
       // Set the input data
       output_multislice.set_input_data(&input_multislice);
