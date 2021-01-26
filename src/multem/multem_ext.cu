@@ -1404,9 +1404,11 @@ namespace multem {
       fft_2d.cleanup();
 
       // If there was an error then throw an exception
-      auto err = cudaGetLastError();
-      if (err != cudaSuccess) {
-        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      if (DeviceType == mt::e_device) {
+        auto err = cudaGetLastError();
+        if (err != cudaSuccess) {
+          throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+        }
       }
     }
     
@@ -1465,9 +1467,11 @@ namespace multem {
       fft_2d.cleanup();
 
       // If there was an error then throw an exception
-      auto err = cudaGetLastError();
-      if (err != cudaSuccess) {
-        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      if (DeviceType == mt::e_device) {
+        auto err = cudaGetLastError();
+        if (err != cudaSuccess) {
+          throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+        }
       }
     }
     
@@ -1523,9 +1527,11 @@ namespace multem {
       output_multislice.clean_temporal();
 
       // If there was an error then throw an exception
-      auto err = cudaGetLastError();
-      if (err != cudaSuccess) {
-        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      if (DeviceType == mt::e_device) {
+        auto err = cudaGetLastError();
+        if (err != cudaSuccess) {
+          throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+        }
       }
     }
  
@@ -2442,9 +2448,11 @@ namespace multem {
     fft_2d.cleanup();
 
     // If there was an error then throw an exception
-    auto err = cudaGetLastError();
-    if (err != cudaSuccess) {
-      throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+    if (DeviceType == mt::e_device) {
+      auto err = cudaGetLastError();
+      if (err != cudaSuccess) {
+        throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+      }
     }
   }
 
