@@ -10,7 +10,7 @@ To install from the github repository do the following
 
 ```sh
 export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
-python -m pip install https://github.com/rosalindfranklininstitute/python-multem/tarball/master#egg=python-multem
+python -m pip install git+https://github.com/rosalindfranklininstitute/python-multem.git@master#egg=python-multem
 ```
 
 To install from source, clone this repository and then do the following:
