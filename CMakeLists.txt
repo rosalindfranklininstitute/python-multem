@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11.0)
+cmake_minimum_required(VERSION 3.17.0)
 
 # Set the project name
 project(multem CXX CUDA)
@@ -7,7 +7,7 @@ project(multem CXX CUDA)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 # Need pybind11 for Python C/C++ extensions
-find_package(CUDA REQUIRED)
+find_package(CUDAToolkit REQUIRED)
 find_package(FFTW REQUIRED)
 
 # Add pybind sub directory
@@ -41,19 +41,10 @@ target_include_directories(multem_ext PUBLIC
 
 # Link to the CUDA libraries
 target_link_libraries(multem_ext PUBLIC
-  ${CUDA_LIBRARIES} 
-  ${CUDA_CUFFT_LIBRARIES}
+  CUDA::cudart
+  CUDA::cuda_driver
+  CUDA::cufft
   ${FFTW_LIBRARIES})
-
-# Set the coverage compile and link flags for gcc or clang
-set(COVERAGE_COMPILE_FLAGS -coverage)
-set(COVERAGE_LINK_FLAGS    -coverage)
-
-# Set the coverage compile and link flags in the debug build
-#target_compile_options(multem_ext 
-#  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_COMPILE_FLAGS}>")
-#target_link_options(multem_ext 
-#  PUBLIC "$<$<CONFIG:DEBUG>:${COVERAGE_LINK_FLAGS}>")
 
 # Install the python extension
 install(TARGETS multem_ext LIBRARY DESTINATION src/multem)

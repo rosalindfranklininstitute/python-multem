@@ -6,19 +6,43 @@
 
 ## Installation
 
+To install from the github repository do the following
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install https://github.com/rosalindfranklininstitute/python-multem/tarball/master#egg=python-multem
+```
+
 To install from source, clone this repository and then do the following:
 
 ```sh
-pip install -r requirements.txt
-python setup.py install
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install .
+```
+
+If you would like to run the tests then, clone this repository and then do the following:
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install .[test]
+```
+
+## Installation for developers
+
+To install for development, clone this repository and then do the following:
+
+```sh
+export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
+python -m pip install -r requirements.txt
+python setup.py develop
 ```
 
 ## Testing
 
-To run the tests, clone this repository and the do the following:
+To run the tests, follow the installation instructions and execute the following:
 
 ```sh
-python setup.py test
+pytest
 ```
 
 ## Issues
