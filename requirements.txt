@@ -1,5 +1,4 @@
 setuptools
-scikit-build
 cmake
 ninja
 wheel

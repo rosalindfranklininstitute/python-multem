@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.17.0)
 # Set the project name
 project(multem CXX CUDA)
 
+# Set the build type to release
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 # Set the cmake module path
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -47,4 +52,4 @@ target_link_libraries(multem_ext PUBLIC
   ${FFTW_LIBRARIES})
 
 # Install the python extension
-install(TARGETS multem_ext LIBRARY DESTINATION src/multem)
+install(TARGETS multem_ext LIBRARY DESTINATION ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})

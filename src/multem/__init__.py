@@ -9,7 +9,7 @@
 # which is included in the root directory of this package.
 #
 import numpy
-from multem.multem_ext import *  # noqa
+from multem_ext import *  # noqa
 
 
 def slice_spec_atoms(atoms, length_z, num_slices):
