@@ -33,8 +33,7 @@ To install for development, clone this repository and then do the following:
 
 ```sh
 export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
-python -m pip install -r requirements.txt
-python setup.py develop
+python -m pip install -e .
 ```
 
 ## Testing
