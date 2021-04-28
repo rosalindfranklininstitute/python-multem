@@ -885,7 +885,16 @@ namespace multem {
           xsize(xsize_),
           ysize(ysize_),
           x_pixel_size(x_pixel_size_),
-          y_pixel_size(y_pixel_size_) {}
+          y_pixel_size(y_pixel_size_) {
+        MULTEM_ASSERT(a1 > 0);    
+        MULTEM_ASSERT(a2 > 0);    
+        MULTEM_ASSERT(s1 > 0);    
+        MULTEM_ASSERT(s2 > 0);    
+        MULTEM_ASSERT(xsize > 0);    
+        MULTEM_ASSERT(ysize > 0);    
+        MULTEM_ASSERT(x_pixel_size > 0);    
+        MULTEM_ASSERT(y_pixel_size > 0);    
+      }
 
       /**
        * Compute the FT of the GRF at this index
@@ -950,7 +959,9 @@ namespace multem {
 
       MaskAndNormalize(double m, double s):
         mean(m),
-        sdev(s) {}
+        sdev(s) {
+        MULTEM_ASSERT(sdev > 0);
+      }
 
       template <typename T, typename U>
       DEVICE_CALLABLE
@@ -1150,6 +1161,7 @@ namespace multem {
         }
 
         // Compute the mean
+        MULTEM_ASSERT(random_field_.size() > 0);
         double mean = thrust::reduce(
             random_field_.begin(),
             random_field_.end(), 
@@ -1165,6 +1177,7 @@ namespace multem {
             mt::functor::add<double>()) / random_field_.size());
         
         // Normalize by the variance
+        MULTEM_ASSERT(sigma > 0);
         thrust::transform(
             mask_.begin(),
             mask_.end(),
@@ -1193,7 +1206,7 @@ namespace multem {
         double V0 = 10784.46; // Computed by calibrating agaist MD water model
         double Cv = compute_variance_correction(x_pixel_size_*y_pixel_size_);
         double var = V0 * Cv * density;
-        MULTEM_ASSERT(var >= 0);
+        MULTEM_ASSERT(var > 0);
         return std::sqrt(var);
       }
 
@@ -1306,7 +1319,7 @@ namespace multem {
         std::size_t size = xlast - xfirst;
         std::size_t index = 0;
         if (x > *xfirst) {
-          while ((index < size-1) && (x > *(xfirst+index))) ++index;
+          while ((index < size-2) && (x > *(xfirst+index))) ++index;
         }
         double x0 = *(xfirst+index);
         double y0 = *(yfirst+index);
