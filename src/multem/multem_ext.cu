@@ -19,11 +19,9 @@
 #include <thrust/random.h>
 #include <types.cuh>
 #include <input_multislice.cuh>
-#include <device_functions.cuh>
-#include <crystal_spec.hpp>
-#include <input_multislice.cuh>
+#include <xtl_build.hpp>
 #include <output_multislice.hpp>
-#include <multislice.cuh>
+#include <tem_simulation.cuh>
 #include <multem/multem_ext.h>
 
 namespace multem {
@@ -1523,13 +1521,15 @@ namespace multem {
         projected_potential(islice, V);
         mt::fft2_shift(input_multislice.grid_2d, V);
         V_host.assign(V.begin(), V.end());
+        MULTEM_ASSERT(input_multislice.grid_2d.nx >= 0);
+        MULTEM_ASSERT(input_multislice.grid_2d.ny >= 0);
         callback(
             z_0, 
             z_e, 
             Image<double>(V_host.data(), 
               Image<double>::shape_type({
-                input_multislice.grid_2d.nx,
-                input_multislice.grid_2d.ny})));
+                (std::size_t)input_multislice.grid_2d.nx,
+                (std::size_t)input_multislice.grid_2d.ny})));
       }
 
       // Syncronize stream
@@ -1736,12 +1736,23 @@ namespace multem {
       input_multislice.cond_lens.outer_aper_ang = input.cond_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      input_multislice.cond_lens.set_dsf_sigma(input.cond_lens_dsf_sigma);
-      input_multislice.cond_lens.dsf_npoints = input.cond_lens_dsf_npoints;
+      /* input_multislice.cond_lens.set_dsf_sigma(input.cond_lens_dsf_sigma); */
+      /* input_multislice.cond_lens.dsf_npoints = input.cond_lens_dsf_npoints; */
+
+	    /* input_multislice.cond_lens.ti_a = input.cond_lens_ti_a; */
+	    input_multislice.cond_lens.ti_sigma = input.cond_lens_dsf_sigma;
+	    /* input_multislice.cond_lens.ti_beta = input.cond_lens_ti_beta; */
+	    input_multislice.cond_lens.ti_npts = input.cond_lens_dsf_npoints;
 
       // source spread function
-      input_multislice.cond_lens.set_ssf_sigma(input.cond_lens_ssf_sigma);
-      input_multislice.cond_lens.ssf_npoints = input.cond_lens_ssf_npoints;
+      /* input_multislice.cond_lens.set_ssf_sigma(input.cond_lens_ssf_sigma); */
+      /* input_multislice.cond_lens.ssf_npoints = input.cond_lens_ssf_npoints; */
+
+      /* input_multislice.cond_lens.si_a = input.cond_lens_si_a; */
+      input_multislice.cond_lens.si_sigma = input.cond_lens_ssf_sigma;
+      /* input_multislice.cond_lens.si_beta = input.cond_lens_si_beta; */
+      /* input_multislice.cond_lens.si_rad_npts = input.cond_lens_si_rad_npts; */
+      /* input_multislice.cond_lens.si_azm_npts = input.cond_lens_si_azm_npts; */ 
 
       // zero defocus reference
       input_multislice.cond_lens.zero_defocus_type = 
@@ -1780,12 +1791,23 @@ namespace multem {
       input_multislice.obj_lens.outer_aper_ang = input.obj_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      input_multislice.obj_lens.set_dsf_sigma(input.obj_lens_dsf_sigma);
-      input_multislice.obj_lens.dsf_npoints = input.obj_lens_dsf_npoints;
+      /* input_multislice.obj_lens.set_dsf_sigma(input.obj_lens_dsf_sigma); */
+      /* input_multislice.obj_lens.dsf_npoints = input.obj_lens_dsf_npoints; */
+      
+      /* input_multislice.obj_lens.ti_a = input.obj_lens_ti_a; */
+	    input_multislice.obj_lens.ti_sigma = input.obj_lens_dsf_sigma;
+	    /* input_multislice.obj_lens.ti_beta = input.obj_lens_ti_beta; */
+	    input_multislice.obj_lens.ti_npts = input.obj_lens_dsf_npoints;
 
       // source spread function
-      input_multislice.obj_lens.set_ssf_sigma(input_multislice.cond_lens.ssf_sigma);
-      input_multislice.obj_lens.ssf_npoints = input_multislice.cond_lens.ssf_npoints;
+      /* input_multislice.obj_lens.set_ssf_sigma(input_multislice.cond_lens.ssf_sigma); */
+      /* input_multislice.obj_lens.ssf_npoints = input_multislice.cond_lens.ssf_npoints; */
+	    
+      /* input_multislice.obj_lens.si_a = input.cond_lens_si_a; */
+      input_multislice.obj_lens.si_sigma = input.cond_lens_ssf_sigma;
+      /* input_multislice.obj_lens.si_beta = input.cond_lens_si_beta; */
+      /* input_multislice.obj_lens.si_rad_npts = input.cond_lens_si_rad_npts; */
+      /* input_multislice.obj_lens.si_azm_npts = input.cond_lens_si_azm_npts; */ 
 
       // zero defocus reference
       input_multislice.obj_lens.zero_defocus_type = 
@@ -2182,11 +2204,13 @@ namespace multem {
     stream.synchronize();
 
     // Return the image
+    MULTEM_ASSERT(input_multislice.grid_2d.nx >= 0);
+    MULTEM_ASSERT(input_multislice.grid_2d.ny >= 0);
     return Image< std::complex<double> >(
         psi_out.data(), 
         { 
-          input_multislice.grid_2d.nx,
-          input_multislice.grid_2d.ny 
+          (std::size_t)input_multislice.grid_2d.nx,
+          (std::size_t)input_multislice.grid_2d.ny 
         });
   }
 
