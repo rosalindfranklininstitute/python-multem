@@ -1203,7 +1203,7 @@ namespace multem {
        */
       double compute_sigma(double density) const {
         /* double V0 = 10784.46; // Computed by calibrating agaist MD water model */
-        double V0 = 10297.86; // Computed by calibrating agaist MD water model
+        double V0 = 10233.70; // Computed by calibrating agaist MD water model
         double Cv = compute_variance_correction(x_pixel_size_*y_pixel_size_);
         double var = V0 * Cv * density;
         MULTEM_ASSERT(var > 0);
