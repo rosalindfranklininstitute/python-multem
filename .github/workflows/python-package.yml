@@ -1,36 +1,3 @@
-
-Skip to content
-Pull requests
-Issues
-Marketplace
-Explore
-@jmp1985
-rosalindfranklininstitute /
-guanaco
-forked from jmp1985/guanaco
-
-0
-0
-
-    1
-
-Code
-Pull requests
-Actions
-Projects
-Wiki
-Security
-Insights
-
-    Settings
-
-guanaco/.github/workflows/python-package.yml
-@jmp1985
-jmp1985 Update python-package.yml
-Latest commit 73ca191 40 minutes ago
-History
-1 contributor
-56 lines (50 sloc) 2.08 KB
 # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
@@ -87,19 +54,3 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
-
-    © 2021 GitHub, Inc.
-    Terms
-    Privacy
-    Security
-    Status
-    Docs
-
-    Contact GitHub
-    Pricing
-    API
-    Training
-    Blog
-    About
-
-Loading complete
