@@ -14,7 +14,6 @@
 #include <stdexcept>
 #include <map>
 #include <string>
-#include <boost/math/special_functions/gamma.hpp>
 #include <cuda_runtime.h>
 #include <thrust/random.h>
 #include <types.cuh>
@@ -1349,7 +1348,7 @@ namespace multem {
         MULTEM_ASSERT(V_0.size() == random_field_.size());
         MULTEM_ASSERT(mask_.size() == random_field_.size());
 
-        // The gamma parameters given the slice slice thickness
+        // The slice thickness
         double thickness = (z_e - z_0);
 
         // Compute the mask
@@ -2450,7 +2449,7 @@ namespace multem {
       std::vector<double> gy(1000);
       for (std::size_t i = 0; i < gx.size(); ++i) {
         gx[i] = (double)i / (double)gx.size();
-        gy[i] = boost::math::gamma_p_inv(alpha, gx[i]) * theta;
+        /* gy[i] = boost::math::gamma_p_inv(alpha, gx[i]) * theta; */
       }
 
       for (std::size_t j = 0; j < ysize; ++j) {
