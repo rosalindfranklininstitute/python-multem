@@ -5,6 +5,7 @@
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/rosalindfranklininstitute/python-multem.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/rosalindfranklininstitute/python-multem/alerts/)
 [![Building](https://github.com/rosalindfranklininstitute/python-multem/actions/workflows/python-package.yml/badge.svg)](https://github.com/rosalindfranklininstitute/python-multem/actions/workflows/python-package.yml)
 [![Publishing](https://github.com/rosalindfranklininstitute/python-multem/actions/workflows/python-publish.yml/badge.svg)](https://github.com/rosalindfranklininstitute/python-multem/actions/workflows/python-publish.yml)
+[![DOI](https://zenodo.org/badge/201027691.svg)](https://zenodo.org/badge/latestdoi/201027691)
 
 ## Installation
 
