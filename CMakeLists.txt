@@ -27,13 +27,15 @@ set(HAS_FLTO_THIN False)
 # clusters which may not allow export of LD_LIBRARY_PATH
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
+# Use C++11
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # Add a C/C++ extension
 pybind11_add_module(multem_ext 
   src/multem/multem_ext.cu
   src/multem/multem_ext.cc)
-
-# Ensure we are using C++11
-target_compile_features(multem_ext PUBLIC cxx_std_11)
 
 # Not specifying CUDA architecture throws and error.
 # Setting this option does not pass arch flag to compiler
