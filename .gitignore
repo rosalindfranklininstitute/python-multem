@@ -111,3 +111,6 @@ _skbuild/
 
 # Clang Format
 .clang-format
+
+# Ignore ctags
+tags
