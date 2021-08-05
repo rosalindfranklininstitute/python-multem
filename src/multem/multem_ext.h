@@ -165,6 +165,7 @@ namespace multem {
     int pn_nconf;
     int pn_dim;
     int pn_seed;
+    double static_B_factor;
 
     // Specimen information
     std::vector<Atom> spec_atoms;
@@ -356,6 +357,7 @@ namespace multem {
         pn_nconf(1),
         pn_dim(110),
         pn_seed(300183),
+        static_B_factor(0),
         spec_dz(0.25),
         spec_lx(10),
         spec_ly(10),

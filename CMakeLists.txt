@@ -28,9 +28,12 @@ set(HAS_FLTO_THIN False)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH True)
 
 # Use C++11
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Allow Lambdas to be called from device
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda")
 
 # Add a C/C++ extension
 pybind11_add_module(multem_ext 

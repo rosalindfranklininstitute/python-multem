@@ -102,6 +102,7 @@ namespace multem {
       msg << prefix << "pn_seed: " << self.pn_seed << "\n";
       msg << prefix << "pn_nconf: " << self.pn_nconf << "\n";
       msg << prefix << "fp_iconf_0: " << self.fp_iconf_0 << "\n";
+      msg << prefix << "static_B_factor: " << self.static_B_factor << "\n";
       /* msg << prefix << Helpers<mt::AtomData<T>>::tate(self.get_atoms); */
       msg << prefix << "is_crystal: " << self.is_crystal << "\n";
       msg << prefix << "spec_rot_theta: " << self.spec_rot_theta << "\n";
@@ -1603,6 +1604,7 @@ namespace multem {
       input_multislice.pn_nconf = input.pn_nconf;
       input_multislice.pn_dim.set(input.pn_dim);
       input_multislice.pn_seed = input.pn_seed;
+      input_multislice.static_B_factor = input.static_B_factor;
 
       // Specimen
       bool pbc_xy = true;
