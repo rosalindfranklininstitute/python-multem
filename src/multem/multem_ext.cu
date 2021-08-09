@@ -1340,7 +1340,7 @@ namespace multem {
           double z_e,
           mt::Vector<FloatType, DeviceType> &V_0) {
         
-        std::cout << z_0 << ", " << z_e << ", " << (z_e-z_0) << std::endl;
+        /* std::cout << z_0 << ", " << z_e << ", " << (z_e-z_0) << std::endl; */
 
         // Check the sizes
         MULTEM_ASSERT(z_0 < z_e);
@@ -1406,7 +1406,7 @@ namespace multem {
       // Setup the multislice simulation 
       mt::Multislice<FloatType, DeviceType> multislice;
       multislice.set_input_data(&input_multislice, &stream, &fft_2d);
-      std::cout << to_string(input_multislice) << std::endl;
+      /* std::cout << to_string(input_multislice) << std::endl; */
 
       // Set the input data
       output_multislice.set_input_data(&input_multislice);
@@ -2557,9 +2557,9 @@ namespace multem {
               z >= masker.zmin() && z < masker.zmax()) {
             value = true;
           }
-          if (mask[j+i*masker.ysize()] != value) {
-            std::cout << x << ", " << y << ", " << z << ", " << value << std::endl;
-          }
+          /* if (mask[j+i*masker.ysize()] != value) { */
+          /*   std::cout << x << ", " << y << ", " << z << ", " << value << std::endl; */
+          /* } */
           MULTEM_ASSERT(mask[j+i*masker.ysize()] == value);
         }
       }
