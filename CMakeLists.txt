@@ -10,7 +10,11 @@ endif()
 
 # Set the cuda arch
 if(NOT CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES OFF)
+  if ($ENV{CMAKE_CUDA_ARCHITECTURES})
+    set(CMAKE_CUDA_ARCHITECTURES $ENV{CMAKE_CUDA_ARCHITECTURES})
+  else()
+    set(CMAKE_CUDA_ARCHITECTURES OFF)
+  endif()
 endif()
 
 # Set the cmake module path
