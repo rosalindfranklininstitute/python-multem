@@ -534,10 +534,15 @@ namespace pybind11 { namespace detail {
         self.cond_lens_phi_56,
         self.cond_lens_inner_aper_ang,
         self.cond_lens_outer_aper_ang,
-        self.cond_lens_ssf_sigma,
-        self.cond_lens_ssf_npoints,
-        self.cond_lens_dsf_sigma,
-        self.cond_lens_dsf_npoints,
+        self.cond_lens_si_sigma,
+        self.cond_lens_si_a,
+        self.cond_lens_si_beta,
+        self.cond_lens_si_rad_npts,
+        self.cond_lens_si_azm_npts,
+        self.cond_lens_ti_sigma,
+        self.cond_lens_ti_a,
+        self.cond_lens_ti_beta,
+        self.cond_lens_ti_npts,
         self.cond_lens_zero_defocus_type,
         self.cond_lens_zero_defocus_plane,
         self.obj_lens_m,
@@ -568,13 +573,14 @@ namespace pybind11 { namespace detail {
         self.obj_lens_phi_56,
         self.obj_lens_inner_aper_ang,
         self.obj_lens_outer_aper_ang,
-        self.obj_lens_dsf_sigma,
-        self.obj_lens_dsf_npoints,
+        self.obj_lens_ti_sigma,
+        self.obj_lens_ti_npts,
         self.obj_lens_zero_defocus_type,
         self.obj_lens_zero_defocus_plane,
         self.phase_shift,
         self.detector,
         self.scanning_type,
+        self.scanning_square_pxs,
         self.scanning_periodic,
         self.scanning_ns,
         self.scanning_x0,
@@ -683,71 +689,77 @@ namespace pybind11 { namespace detail {
       self.cond_lens_phi_56 = obj[70].cast< double >();
       self.cond_lens_inner_aper_ang = obj[71].cast< double >();
       self.cond_lens_outer_aper_ang = obj[72].cast< double >();
-      self.cond_lens_ssf_sigma = obj[73].cast< double >();
-      self.cond_lens_ssf_npoints = obj[74].cast< int >();
-      self.cond_lens_dsf_sigma = obj[75].cast< double >();
-      self.cond_lens_dsf_npoints = obj[76].cast< int >();
-      self.cond_lens_zero_defocus_type = obj[77].cast< std::string >();
-      self.cond_lens_zero_defocus_plane = obj[78].cast< double >();
-      self.obj_lens_m = obj[79].cast< int >();
-      self.obj_lens_c_10 = obj[80].cast< double >();
-      self.obj_lens_c_12 = obj[81].cast< double >();
-      self.obj_lens_phi_12 = obj[82].cast< double >();
-      self.obj_lens_c_21 = obj[83].cast< double >();
-      self.obj_lens_phi_21 = obj[84].cast< double >();
-      self.obj_lens_c_23 = obj[85].cast< double >();
-      self.obj_lens_phi_23 = obj[86].cast< double >();
-      self.obj_lens_c_30 = obj[87].cast< double >();
-      self.obj_lens_c_32 = obj[88].cast< double >();
-      self.obj_lens_phi_32 = obj[89].cast< double >();
-      self.obj_lens_c_34 = obj[90].cast< double >();
-      self.obj_lens_phi_34 = obj[91].cast< double >();
-      self.obj_lens_c_41 = obj[92].cast< double >();
-      self.obj_lens_phi_41 = obj[93].cast< double >();
-      self.obj_lens_c_43 = obj[94].cast< double >();
-      self.obj_lens_phi_43 = obj[95].cast< double >();
-      self.obj_lens_c_45 = obj[96].cast< double >();
-      self.obj_lens_phi_45 = obj[97].cast< double >();
-      self.obj_lens_c_50 = obj[98].cast< double >();
-      self.obj_lens_c_52 = obj[99].cast< double >();
-      self.obj_lens_phi_52 = obj[100].cast< double >();
-      self.obj_lens_c_54 = obj[101].cast< double >();
-      self.obj_lens_phi_54 = obj[102].cast< double >();
-      self.obj_lens_c_56 = obj[103].cast< double >();
-      self.obj_lens_phi_56 = obj[104].cast< double >();
-      self.obj_lens_inner_aper_ang = obj[105].cast< double >();
-      self.obj_lens_outer_aper_ang = obj[106].cast< double >();
-      self.obj_lens_dsf_sigma = obj[107].cast< double >();
-      self.obj_lens_dsf_npoints = obj[108].cast< int >();
-      self.obj_lens_zero_defocus_type = obj[109].cast< std::string >();
-      self.obj_lens_zero_defocus_plane = obj[110].cast< double >();
-      self.phase_shift = obj[111].cast<double>();
-      self.detector = obj[112].cast< multem::STEMDetector >();
-      self.scanning_type = obj[113].cast< std::string >();
-      self.scanning_periodic = obj[114].cast< bool >();
-      self.scanning_ns = obj[115].cast< int >();
-      self.scanning_x0 = obj[116].cast< double >();
-      self.scanning_y0 = obj[117].cast< double >();
-      self.scanning_xe = obj[118].cast< double >();
-      self.scanning_ye = obj[119].cast< double >();
-      self.ped_nrot = obj[120].cast< double >();
-      self.ped_theta = obj[121].cast< double >();
-      self.hci_nrot = obj[122].cast< double >();
-      self.hci_theta = obj[123].cast< double >();
-      self.eels_Z = obj[124].cast< int >();
-      self.eels_E_loss = obj[125].cast< double >();
-      self.eels_collection_angle = obj[126].cast< double >();
-      self.eels_m_selection = obj[127].cast< int >();
-      self.eels_channelling_type = obj[128].cast< std::string >();
-      self.eftem_Z = obj[129].cast< int >();
-      self.eftem_E_loss = obj[130].cast< double >();
-      self.eftem_collection_angle = obj[131].cast< double >();
-      self.eftem_m_selection = obj[132].cast< int >();
-      self.eftem_channelling_type = obj[133].cast< std::string >();
-      self.output_area_ix_0 = obj[134].cast< int >();
-      self.output_area_iy_0 = obj[135].cast< int >();
-      self.output_area_ix_e = obj[136].cast< int >();
-      self.output_area_iy_e = obj[137].cast< int >();
+      self.cond_lens_si_sigma = obj[73].cast< double >();
+      self.cond_lens_si_a = obj[74].cast<double>();
+      self.cond_lens_si_beta = obj[75].cast<double>();
+      self.cond_lens_si_rad_npts = obj[76].cast<int>();
+      self.cond_lens_si_azm_npts = obj[77].cast<int>();
+      self.cond_lens_ti_sigma = obj[78].cast< double >();
+      self.cond_lens_ti_a = obj[79].cast<double>();
+      self.cond_lens_ti_beta = obj[80].cast<double>();
+      self.cond_lens_ti_npts = obj[81].cast< int >();
+      self.cond_lens_zero_defocus_type = obj[82].cast< std::string >();
+      self.cond_lens_zero_defocus_plane = obj[83].cast< double >();
+      self.obj_lens_m = obj[84].cast< int >();
+      self.obj_lens_c_10 = obj[85].cast< double >();
+      self.obj_lens_c_12 = obj[86].cast< double >();
+      self.obj_lens_phi_12 = obj[87].cast< double >();
+      self.obj_lens_c_21 = obj[88].cast< double >();
+      self.obj_lens_phi_21 = obj[89].cast< double >();
+      self.obj_lens_c_23 = obj[90].cast< double >();
+      self.obj_lens_phi_23 = obj[91].cast< double >();
+      self.obj_lens_c_30 = obj[92].cast< double >();
+      self.obj_lens_c_32 = obj[93].cast< double >();
+      self.obj_lens_phi_32 = obj[94].cast< double >();
+      self.obj_lens_c_34 = obj[95].cast< double >();
+      self.obj_lens_phi_34 = obj[96].cast< double >();
+      self.obj_lens_c_41 = obj[97].cast< double >();
+      self.obj_lens_phi_41 = obj[98].cast< double >();
+      self.obj_lens_c_43 = obj[99].cast< double >();
+      self.obj_lens_phi_43 = obj[100].cast< double >();
+      self.obj_lens_c_45 = obj[101].cast< double >();
+      self.obj_lens_phi_45 = obj[102].cast< double >();
+      self.obj_lens_c_50 = obj[103].cast< double >();
+      self.obj_lens_c_52 = obj[104].cast< double >();
+      self.obj_lens_phi_52 = obj[105].cast< double >();
+      self.obj_lens_c_54 = obj[106].cast< double >();
+      self.obj_lens_phi_54 = obj[107].cast< double >();
+      self.obj_lens_c_56 = obj[108].cast< double >();
+      self.obj_lens_phi_56 = obj[109].cast< double >();
+      self.obj_lens_inner_aper_ang = obj[110].cast< double >();
+      self.obj_lens_outer_aper_ang = obj[111].cast< double >();
+      self.obj_lens_ti_sigma = obj[112].cast< double >();
+      self.obj_lens_ti_npts = obj[113].cast< int >();
+      self.obj_lens_zero_defocus_type = obj[114].cast< std::string >();
+      self.obj_lens_zero_defocus_plane = obj[115].cast< double >();
+      self.phase_shift = obj[116].cast<double>();
+      self.detector = obj[117].cast< multem::STEMDetector >();
+      self.scanning_type = obj[118].cast< std::string >();
+      self.scanning_square_pxs = obj[119].cast< bool >();
+      self.scanning_periodic = obj[120].cast< bool >();
+      self.scanning_ns = obj[121].cast< int >();
+      self.scanning_x0 = obj[122].cast< double >();
+      self.scanning_y0 = obj[123].cast< double >();
+      self.scanning_xe = obj[124].cast< double >();
+      self.scanning_ye = obj[125].cast< double >();
+      self.ped_nrot = obj[126].cast< double >();
+      self.ped_theta = obj[127].cast< double >();
+      self.hci_nrot = obj[128].cast< double >();
+      self.hci_theta = obj[129].cast< double >();
+      self.eels_Z = obj[130].cast< int >();
+      self.eels_E_loss = obj[131].cast< double >();
+      self.eels_collection_angle = obj[132].cast< double >();
+      self.eels_m_selection = obj[133].cast< int >();
+      self.eels_channelling_type = obj[134].cast< std::string >();
+      self.eftem_Z = obj[135].cast< int >();
+      self.eftem_E_loss = obj[136].cast< double >();
+      self.eftem_collection_angle = obj[137].cast< double >();
+      self.eftem_m_selection = obj[138].cast< int >();
+      self.eftem_channelling_type = obj[139].cast< std::string >();
+      self.output_area_ix_0 = obj[140].cast< int >();
+      self.output_area_iy_0 = obj[141].cast< int >();
+      self.output_area_ix_e = obj[142].cast< int >();
+      self.output_area_iy_e = obj[143].cast< int >();
       return self;
     }
 
@@ -843,10 +855,15 @@ namespace pybind11 { namespace detail {
       result["cond_lens_phi_56"] = self.cond_lens_phi_56;
       result["cond_lens_inner_aper_ang"] = self.cond_lens_inner_aper_ang;
       result["cond_lens_outer_aper_ang"] = self.cond_lens_outer_aper_ang;
-      result["cond_lens_ssf_sigma"] = self.cond_lens_ssf_sigma;
-      result["cond_lens_ssf_npoints"] = self.cond_lens_ssf_npoints;
-      result["cond_lens_dsf_sigma"] = self.cond_lens_dsf_sigma;
-      result["cond_lens_dsf_npoints"] = self.cond_lens_dsf_npoints;
+      result["cond_lens_si_sigma"] = self.cond_lens_si_sigma;
+      result["cond_lens_si_a"] = self.cond_lens_si_a;
+      result["cond_lens_si_beta"] = self.cond_lens_si_beta;
+      result["cond_lens_si_rad_npts"] = self.cond_lens_si_rad_npts;
+      result["cond_lens_si_azm_npts"] = self.cond_lens_si_azm_npts;
+      result["cond_lens_ti_sigma"] = self.cond_lens_ti_sigma;
+      result["cond_lens_ti_a"] = self.cond_lens_ti_a;
+      result["cond_lens_ti_beta"] = self.cond_lens_ti_beta;
+      result["cond_lens_ti_npts"] = self.cond_lens_ti_npts;
       result["cond_lens_zero_defocus_type"] = self.cond_lens_zero_defocus_type;
       result["cond_lens_zero_defocus_plane"] = self.cond_lens_zero_defocus_plane;
       result["obj_lens_m"] = self.obj_lens_m;
@@ -877,13 +894,14 @@ namespace pybind11 { namespace detail {
       result["obj_lens_phi_56"] = self.obj_lens_phi_56;
       result["obj_lens_inner_aper_ang"] = self.obj_lens_inner_aper_ang;
       result["obj_lens_outer_aper_ang"] = self.obj_lens_outer_aper_ang;
-      result["obj_lens_dsf_sigma"] = self.obj_lens_dsf_sigma;
-      result["obj_lens_dsf_npoints"] = self.obj_lens_dsf_npoints;
+      result["obj_lens_ti_sigma"] = self.obj_lens_ti_sigma;
+      result["obj_lens_ti_npts"] = self.obj_lens_ti_npts;
       result["obj_lens_zero_defocus_type"] = self.obj_lens_zero_defocus_type;
       result["obj_lens_zero_defocus_plane"] = self.obj_lens_zero_defocus_plane;
       result["phase_shift"] = self.phase_shift;
       //STEMDetector detector;
       result["scanning_type"] = self.scanning_type;
+      result["scanning_square_pxs"] = self.scanning_square_pxs;
       result["scanning_periodic"] = self.scanning_periodic;
       result["scanning_ns"] = self.scanning_ns;
       result["scanning_x0"] = self.scanning_x0;
@@ -1113,10 +1131,15 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("cond_lens_phi_56", &multem::Input::cond_lens_phi_56)
     .def_readwrite("cond_lens_inner_aper_ang", &multem::Input::cond_lens_inner_aper_ang)
     .def_readwrite("cond_lens_outer_aper_ang", &multem::Input::cond_lens_outer_aper_ang)
-    .def_readwrite("cond_lens_ssf_sigma", &multem::Input::cond_lens_ssf_sigma)
-    .def_readwrite("cond_lens_ssf_npoints", &multem::Input::cond_lens_ssf_npoints)
-    .def_readwrite("cond_lens_dsf_sigma", &multem::Input::cond_lens_dsf_sigma)
-    .def_readwrite("cond_lens_dsf_npoints", &multem::Input::cond_lens_dsf_npoints)
+    .def_readwrite("cond_lens_si_sigma", &multem::Input::cond_lens_si_sigma)
+    .def_readwrite("cond_lens_si_a", &multem::Input::cond_lens_si_a)
+    .def_readwrite("cond_lens_si_beta", &multem::Input::cond_lens_si_beta)
+    .def_readwrite("cond_lens_si_rad_npts", &multem::Input::cond_lens_si_rad_npts)
+    .def_readwrite("cond_lens_si_azm_npts", &multem::Input::cond_lens_si_azm_npts)
+    .def_readwrite("cond_lens_ti_sigma", &multem::Input::cond_lens_ti_sigma)
+    .def_readwrite("cond_lens_ti_a", &multem::Input::cond_lens_ti_a)
+    .def_readwrite("cond_lens_ti_beta", &multem::Input::cond_lens_ti_beta)
+    .def_readwrite("cond_lens_ti_npts", &multem::Input::cond_lens_ti_npts)
     .def_readwrite("cond_lens_zero_defocus_type", &multem::Input::cond_lens_zero_defocus_type)
     .def_readwrite("cond_lens_zero_defocus_plane", &multem::Input::cond_lens_zero_defocus_plane)
     .def_readwrite("obj_lens_m", &multem::Input::obj_lens_m)
@@ -1147,13 +1170,16 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("obj_lens_phi_56", &multem::Input::obj_lens_phi_56)
     .def_readwrite("obj_lens_inner_aper_ang", &multem::Input::obj_lens_inner_aper_ang)
     .def_readwrite("obj_lens_outer_aper_ang", &multem::Input::obj_lens_outer_aper_ang)
-    .def_readwrite("obj_lens_dsf_sigma", &multem::Input::obj_lens_dsf_sigma)
-    .def_readwrite("obj_lens_dsf_npoints", &multem::Input::obj_lens_dsf_npoints)
+    .def_readwrite("obj_lens_ti_a", &multem::Input::obj_lens_ti_a)
+    .def_readwrite("obj_lens_ti_sigma", &multem::Input::obj_lens_ti_sigma)
+    .def_readwrite("obj_lens_ti_beta", &multem::Input::obj_lens_ti_beta)
+    .def_readwrite("obj_lens_ti_npts", &multem::Input::obj_lens_ti_npts)
     .def_readwrite("obj_lens_zero_defocus_type", &multem::Input::obj_lens_zero_defocus_type)
     .def_readwrite("obj_lens_zero_defocus_plane", &multem::Input::obj_lens_zero_defocus_plane)
     .def_readwrite("phase_shift", &multem::Input::phase_shift)
     .def_readwrite("detector", &multem::Input::detector)
     .def_readwrite("scanning_type", &multem::Input::scanning_type)
+    .def_readwrite("scanning_square_pxs", &multem::Input::scanning_square_pxs)
     .def_readwrite("scanning_periodic", &multem::Input::scanning_periodic)
     .def_readwrite("scanning_ns", &multem::Input::scanning_ns)
     .def_readwrite("scanning_x0", &multem::Input::scanning_x0)
@@ -1285,6 +1311,7 @@ PYBIND11_MODULE(multem_ext, m)
 
   m.def("mrad_to_sigma", &multem::mrad_to_sigma);
   m.def("iehwgd_to_sigma", &multem::iehwgd_to_sigma);
+  m.def("hwhm_to_sigma", &multem::hwhm_to_sigma);
 
   m.def("crystal_by_layers", &multem::crystal_by_layers);
   m.def("compute_V_params", &multem::compute_V_params);

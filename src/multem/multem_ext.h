@@ -250,12 +250,17 @@ namespace multem {
     double cond_lens_outer_aper_ang;
 
     // Source spread function
-    double cond_lens_ssf_sigma;
-    int cond_lens_ssf_npoints;
+    double cond_lens_si_sigma;
+    double cond_lens_si_a;
+    double cond_lens_si_beta;
+    int cond_lens_si_rad_npts;
+    int cond_lens_si_azm_npts;
     
     // Defocus spread function
-    double cond_lens_dsf_sigma;
-    int cond_lens_dsf_npoints;
+    double cond_lens_ti_a;
+    double cond_lens_ti_sigma;
+    double cond_lens_ti_beta;
+    int cond_lens_ti_npts;
 
     // Zero defocus reference
     std::string cond_lens_zero_defocus_type;
@@ -292,8 +297,10 @@ namespace multem {
     double obj_lens_outer_aper_ang;
 
     // Defocus spread function
-    double obj_lens_dsf_sigma;
-    int obj_lens_dsf_npoints;
+    double obj_lens_ti_a;
+    double obj_lens_ti_sigma;
+    double obj_lens_ti_beta;
+    int obj_lens_ti_npts;
 
     // The phase shift
     double phase_shift;
@@ -307,6 +314,7 @@ namespace multem {
 
     // Scanning area for ISTEM/STEM/EELS
     std::string scanning_type;
+    bool scanning_square_pxs;
     bool scanning_periodic;
     int scanning_ns;
     double scanning_x0;
@@ -418,11 +426,16 @@ namespace multem {
         cond_lens_phi_56(0.0),
         cond_lens_inner_aper_ang(0.0),
         cond_lens_outer_aper_ang(21.0),
-        cond_lens_ssf_sigma(0.0072),
-        cond_lens_ssf_npoints(8),
-        cond_lens_dsf_sigma(32),
-        cond_lens_dsf_npoints(10),
-        cond_lens_zero_defocus_type("Last"),
+        cond_lens_si_sigma(0.0072),
+        cond_lens_si_a(1.0),
+        cond_lens_si_beta(0.0),
+        cond_lens_si_rad_npts(4),
+        cond_lens_si_azm_npts(4),
+        cond_lens_ti_a(1.0),
+        cond_lens_ti_sigma(32),
+        cond_lens_ti_beta(0.0),
+        cond_lens_ti_npts(10),
+        cond_lens_zero_defocus_type("First"),
         cond_lens_zero_defocus_plane(0),
         obj_lens_m(0),
         obj_lens_c_10(14.0312),
@@ -452,12 +465,15 @@ namespace multem {
         obj_lens_phi_56(0.0),
         obj_lens_inner_aper_ang(0.0),
         obj_lens_outer_aper_ang(24.0),
-        obj_lens_dsf_sigma(32),
-        obj_lens_dsf_npoints(10),
-        obj_lens_zero_defocus_type("Last"),
+        obj_lens_ti_a(1.0),
+        obj_lens_ti_sigma(32),
+        obj_lens_ti_beta(0.0),
+        obj_lens_ti_npts(10),
+        obj_lens_zero_defocus_type("First"),
         obj_lens_zero_defocus_plane(0),
         phase_shift(0),
         scanning_type("Line"),
+        scanning_square_pxs(false),
         scanning_periodic(true),
         scanning_ns(10),
         scanning_x0(0.0),
@@ -798,6 +814,7 @@ namespace multem {
 
   double mrad_to_sigma(double E0, double theta);
   double iehwgd_to_sigma(double value);
+  double hwhm_to_sigma(double value);
 
   std::vector<Atom> crystal_by_layers(const CrystalParameters &params);
   std::vector< std::pair<double, double> > compute_V_params(

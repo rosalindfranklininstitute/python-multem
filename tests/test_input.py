@@ -101,11 +101,16 @@ def test_input():
     input.cond_lens_inner_aper_ang = 2.6
     input.cond_lens_outer_aper_ang = 2.7
 
-    input.cond_lens_ssf_sigma = 0.1
-    input.cond_lens_ssf_npoints = 2
+    input.cond_lens_si_a = 0.1
+    input.cond_lens_si_sigma = 0.2
+    input.cond_lens_si_beta = 0.3
+    input.cond_lens_si_rad_npts = 2
+    input.cond_lens_si_azm_npts = 3
 
-    input.cond_lens_dsf_sigma = 0.3
-    input.cond_lens_dsf_npoints = 4
+    input.cond_lens_ti_a = 0.1
+    input.cond_lens_ti_sigma = 0.2
+    input.cond_lens_ti_beta = 0.3
+    input.cond_lens_ti_npts = 4
 
     input.cond_lens_zero_defocus_type = "Cond Lens Zero Defocus Type"
     input.cond_lens_zero_defocus_plane = 0.123
@@ -139,8 +144,8 @@ def test_input():
     input.obj_lens_inner_aper_ang = 0.26
     input.obj_lens_outer_aper_ang = 0.27
 
-    input.obj_lens_dsf_sigma = 0.1
-    input.obj_lens_dsf_npoints = 20
+    input.obj_lens_ti_sigma = 0.1
+    input.obj_lens_ti_npts = 20
 
     input.obj_lens_zero_defocus_type = "Obj Lens Zero Defocus Type"
     input.obj_lens_zero_defocus_plane = 1.1
@@ -269,11 +274,16 @@ def test_input():
         assert input.cond_lens_inner_aper_ang == 2.6
         assert input.cond_lens_outer_aper_ang == 2.7
 
-        assert input.cond_lens_ssf_sigma == 0.1
-        assert input.cond_lens_ssf_npoints == 2
+        assert input.cond_lens_si_a == 0.1
+        assert input.cond_lens_si_sigma == 0.2
+        assert input.cond_lens_si_beta == 0.3
+        assert input.cond_lens_si_rad_npts == 2
+        assert input.cond_lens_si_azm_npts == 3
 
-        assert input.cond_lens_dsf_sigma == 0.3
-        assert input.cond_lens_dsf_npoints == 4
+        assert input.cond_lens_ti_a == 0.1
+        assert input.cond_lens_ti_sigma == 0.2
+        assert input.cond_lens_ti_beta == 0.3
+        assert input.cond_lens_ti_npts == 4
 
         assert input.cond_lens_zero_defocus_type == "Cond Lens Zero Defocus Type"
         assert input.cond_lens_zero_defocus_plane == 0.123
@@ -307,8 +317,8 @@ def test_input():
         assert input.obj_lens_inner_aper_ang == 0.26
         assert input.obj_lens_outer_aper_ang == 0.27
 
-        assert input.obj_lens_dsf_sigma == 0.1
-        assert input.obj_lens_dsf_npoints == 20
+        assert input.obj_lens_ti_sigma == 0.1
+        assert input.obj_lens_ti_npts == 20
 
         assert input.obj_lens_zero_defocus_type == "Obj Lens Zero Defocus Type"
         assert input.obj_lens_zero_defocus_plane == 1.1

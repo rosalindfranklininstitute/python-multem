@@ -69,18 +69,18 @@ namespace multem {
       msg << prefix << "phi_56: " << self.phi_56 << "\n";
       msg << prefix << "inner_aper_ang: " << self.inner_aper_ang << "\n";
       msg << prefix << "outer_aper_ang: " << self.outer_aper_ang << "\n";
-      /* msg << prefix << "ti_a: " << self.ti_a << "\n"; */
-      /* msg << prefix << "ti_sigma: " << self.ti_sigma << "\n"; */
-      /* msg << prefix << "ti_beta: " << self.ti_beta << "\n"; */
-      /* msg << prefix << "ti_npts: " << self.ti_npts << "\n"; */
-      /* msg << prefix << "ti_iehwgd: " << self.ti_iehwgd << "\n"; */
-      /* msg << prefix << "si_a: " << self.si_a << "\n"; */
-      /* msg << prefix << "si_sigma: " << self.si_sigma << "\n"; */
-      /* msg << prefix << "si_beta: " << self.si_beta << "\n"; */
-      /* msg << prefix << "si_rad_npts: " << self.si_rad_npts << "\n"; */
-      /* msg << prefix << "si_azm_npts: " << self.si_azm_npts << "\n"; */
-      /* msg << prefix << "si_iehwgd: " << self.si_iehwgd << "\n"; */
-      /* msg << prefix << "si_theta_c: " << self.si_theta_c << "\n"; */
+      msg << prefix << "ti_a: " << self.ti_a << "\n";
+      msg << prefix << "ti_sigma: " << self.ti_sigma << "\n";
+      msg << prefix << "ti_beta: " << self.ti_beta << "\n";
+      msg << prefix << "ti_npts: " << self.ti_npts << "\n";
+      msg << prefix << "ti_iehwgd: " << self.ti_iehwgd << "\n";
+      msg << prefix << "si_a: " << self.si_a << "\n";
+      msg << prefix << "si_sigma: " << self.si_sigma << "\n";
+      msg << prefix << "si_beta: " << self.si_beta << "\n";
+      msg << prefix << "si_rad_npts: " << self.si_rad_npts << "\n";
+      msg << prefix << "si_azm_npts: " << self.si_azm_npts << "\n";
+      msg << prefix << "si_iehwgd: " << self.si_iehwgd << "\n";
+      msg << prefix << "si_theta_c: " << self.si_theta_c << "\n";
       msg << prefix << "zero_defocus_type: " << self.zero_defocus_type << "\n";
       msg << prefix << "zero_defocus_plane: " << self.zero_defocus_plane << "\n";
       msg << prefix << "lambda: " << self.lambda << "\n";
@@ -1743,23 +1743,23 @@ namespace multem {
       input_multislice.cond_lens.outer_aper_ang = input.cond_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      /* input_multislice.cond_lens.set_dsf_sigma(input.cond_lens_dsf_sigma); */
+      /* input_multislice.cond_lens.set_ti_sigma(input.cond_lens_ti_sigma); */
       /* input_multislice.cond_lens.dsf_npoints = input.cond_lens_dsf_npoints; */
 
-	    /* input_multislice.cond_lens.ti_a = input.cond_lens_ti_a; */
-	    input_multislice.cond_lens.ti_sigma = input.cond_lens_dsf_sigma;
-	    /* input_multislice.cond_lens.ti_beta = input.cond_lens_ti_beta; */
-	    input_multislice.cond_lens.ti_npts = input.cond_lens_dsf_npoints;
+	    input_multislice.cond_lens.ti_a = input.cond_lens_ti_a;
+	    input_multislice.cond_lens.ti_sigma = input.cond_lens_ti_sigma;
+	    input_multislice.cond_lens.ti_beta = input.cond_lens_ti_beta;
+	    input_multislice.cond_lens.ti_npts = input.cond_lens_ti_npts;
 
       // source spread function
-      /* input_multislice.cond_lens.set_ssf_sigma(input.cond_lens_ssf_sigma); */
+      /* input_multislice.cond_lens.set_si_sigma(input.cond_lens_si_sigma); */
       /* input_multislice.cond_lens.ssf_npoints = input.cond_lens_ssf_npoints; */
 
-      /* input_multislice.cond_lens.si_a = input.cond_lens_si_a; */
-      input_multislice.cond_lens.si_sigma = input.cond_lens_ssf_sigma;
-      /* input_multislice.cond_lens.si_beta = input.cond_lens_si_beta; */
-      /* input_multislice.cond_lens.si_rad_npts = input.cond_lens_si_rad_npts; */
-      /* input_multislice.cond_lens.si_azm_npts = input.cond_lens_si_azm_npts; */ 
+      input_multislice.cond_lens.si_a = input.cond_lens_si_a;
+      input_multislice.cond_lens.si_sigma = input.cond_lens_si_sigma;
+      input_multislice.cond_lens.si_beta = input.cond_lens_si_beta;
+      input_multislice.cond_lens.si_rad_npts = input.cond_lens_si_rad_npts;
+      input_multislice.cond_lens.si_azm_npts = input.cond_lens_si_azm_npts; 
 
       // zero defocus reference
       input_multislice.cond_lens.zero_defocus_type = 
@@ -1798,24 +1798,24 @@ namespace multem {
       input_multislice.obj_lens.outer_aper_ang = input.obj_lens_outer_aper_ang*mt::c_mrad_2_rad;
 
       // defocus spread function
-      /* input_multislice.obj_lens.set_dsf_sigma(input.obj_lens_dsf_sigma); */
+      /* input_multislice.obj_lens.set_ti_sigma(input.obj_lens_ti_sigma); */
       /* input_multislice.obj_lens.dsf_npoints = input.obj_lens_dsf_npoints; */
       
-      /* input_multislice.obj_lens.ti_a = input.obj_lens_ti_a; */
-	    input_multislice.obj_lens.ti_sigma = input.obj_lens_dsf_sigma;
-	    /* input_multislice.obj_lens.ti_beta = input.obj_lens_ti_beta; */
-	    input_multislice.obj_lens.ti_npts = input.obj_lens_dsf_npoints;
+      input_multislice.obj_lens.si_a = input.cond_lens_si_a;
+      input_multislice.obj_lens.si_sigma = input.cond_lens_si_sigma;
+      input_multislice.obj_lens.si_beta = input.cond_lens_si_beta;
+      input_multislice.obj_lens.si_rad_npts = input.cond_lens_si_rad_npts;
+      input_multislice.obj_lens.si_azm_npts = input.cond_lens_si_azm_npts; 
+      
+      input_multislice.obj_lens.ti_a = input.obj_lens_ti_a;
+	    input_multislice.obj_lens.ti_sigma = input.obj_lens_ti_sigma;
+	    input_multislice.obj_lens.ti_beta = input.obj_lens_ti_beta;
+	    input_multislice.obj_lens.ti_npts = input.obj_lens_ti_npts;
 
       // source spread function
-      /* input_multislice.obj_lens.set_ssf_sigma(input_multislice.cond_lens.ssf_sigma); */
+      /* input_multislice.obj_lens.set_si_sigma(input_multislice.cond_lens.si_sigma); */
       /* input_multislice.obj_lens.ssf_npoints = input_multislice.cond_lens.ssf_npoints; */
 	    
-      /* input_multislice.obj_lens.si_a = input.cond_lens_si_a; */
-      input_multislice.obj_lens.si_sigma = input.cond_lens_ssf_sigma;
-      /* input_multislice.obj_lens.si_beta = input.cond_lens_si_beta; */
-      /* input_multislice.obj_lens.si_rad_npts = input.cond_lens_si_rad_npts; */
-      /* input_multislice.obj_lens.si_azm_npts = input.cond_lens_si_azm_npts; */ 
-
       // zero defocus reference
       input_multislice.obj_lens.zero_defocus_type = 
         detail::from_string<mt::eZero_Defocus_Type>(input.obj_lens_zero_defocus_type);
@@ -1829,6 +1829,7 @@ namespace multem {
       if (input_multislice.is_scanning()) {
         input_multislice.scanning.type = detail::from_string<mt::eScanning_Type>(input.scanning_type);
         input_multislice.scanning.pbc = input.scanning_periodic;
+        input_multislice.scanning.spxs = input.scanning_square_pxs;
         input_multislice.scanning.ns = input.scanning_ns;
         input_multislice.scanning.x0 = input.scanning_x0;
         input_multislice.scanning.y0 = input.scanning_y0;
@@ -1917,6 +1918,7 @@ namespace multem {
 
       // Validate the input parameters
       input_multislice.validate_parameters();
+      /* mt::print(input_multislice); */
       return input_multislice;
     }
 
@@ -2266,6 +2268,10 @@ namespace multem {
 
   double iehwgd_to_sigma(double value) {
     return mt::iehwgd_2_sigma(value);
+  }
+  
+  double hwhm_to_sigma(double value) {
+    return mt::hwhm_2_sigma(value);
   }
 
   std::vector<Atom> crystal_by_layers(const CrystalParameters &params) {

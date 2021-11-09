@@ -78,9 +78,9 @@ input_multislice.temporal_spatial_incoh = "Temporal_Spatial"
 
 # Condenser lens
 # source spread function
-# ssf_sigma = multem.mrad_to_sigma(input_multislice.E_0, 0.02)
+# si_sigma = multem.mrad_to_sigma(input_multislice.E_0, 0.02)
 # These lines are commented due to there being a bug in the matlab code
-# input_multislice.cond_lens_ssf_sigma = ssf_sigma
+# input_multislice.cond_lens_si_sigma = si_sigma
 # input_multislice.cond_lens_ssf_npoints = 4
 
 # Objective lens
@@ -96,8 +96,8 @@ input_multislice.obj_lens_inner_aper_ang = 0.0
 input_multislice.obj_lens_outer_aper_ang = 0.0
 
 # defocus spread function
-# dsf_sigma = multem.iehwgd_to_sigma(32)
-# input_multislice.obj_lens_dsf_sigma = dsf_sigma
+# ti_sigma = multem.iehwgd_to_sigma(32)
+# input_multislice.obj_lens_ti_sigma = ti_sigma
 # input_multislice.obj_lens_dsf_npoints = 5
 
 # zero defocus reference
@@ -111,4 +111,3 @@ print("Time: %.2f" % (time.time() - st))
 data = {"input": input_multislice.asdict(), "output": output_multislice.asdict()}
 
 pickle.dump(data, open("simulated_HRTEM.p", "wb"), protocol=2)
-
