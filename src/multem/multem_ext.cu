@@ -1016,10 +1016,10 @@ namespace multem {
         : gen_(std::random_device()()),
           m1_(0),
           m2_(1.0/2.88),
-          s1_(0.7312113),
-          s2_(0.0807801),
-          a1_(0.19465002),//1.8129639),
-          a2_(0.78343527),//7.2968907),
+          s1_(0.731),
+          s2_(0.081),
+          a1_(0.199),
+          a2_(0.801),
           x_pixel_size_(1),
           y_pixel_size_(1),
           fft_data_counter_(0),
@@ -1203,7 +1203,8 @@ namespace multem {
        */
       double compute_sigma(double density) const {
         /* double V0 = 10784.46; // Computed by calibrating agaist MD water model */
-        double V0 = 10233.70; // Computed by calibrating agaist MD water model
+        // double V0 = 10233.70; // Computed by calibrating agaist MD water model
+        double V0 = 10195.82; // Computed by calibrating agaist MD water model
         double Cv = compute_variance_correction(x_pixel_size_*y_pixel_size_);
         double var = V0 * Cv * density;
         MULTEM_ASSERT(var > 0);
