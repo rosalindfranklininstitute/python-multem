@@ -6,8 +6,7 @@ package:
   version: "{{ version }}"
 
 source:
-  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 5191d82bb79a8a0698a31bd7068d89037b3074aaac531b81acea95381039818e
+  path: ..
 
 build:
   number: 0
@@ -37,14 +36,4 @@ test:
     - pytest-cov
 
 about:
-  home: The package home page
-  license: BSD
-  license_family: BSD
-  license_file: 
   summary: "A Python wrapper for MULTEM"
-  doc_url: 
-  dev_url: 
-
-extra:
-  recipe-maintainers:
-    - your-github-id-here
