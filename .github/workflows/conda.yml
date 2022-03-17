@@ -7,7 +7,7 @@ jobs:
     
     runs-on: ubuntu-latest
 
-    environment: guanaco-environment
+    environment: deployment
 
     strategy:
       max-parallel: 5
