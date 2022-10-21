@@ -824,10 +824,31 @@ namespace multem {
         radius_.fill(radius[0]);
         x_offset_.fill(x_offset[0]);
         z_offset_.fill(z_offset[0]);
-      } else {
+      } else if (radius.size() == 10) {
         std::copy(radius.begin(), radius.end(), radius_.begin());
         std::copy(x_offset.begin(), x_offset.end(), x_offset_.begin());
         std::copy(z_offset.begin(), z_offset.end(), z_offset_.begin());
+      } else {
+        auto a = (double)(radius.size() - 1) / (double)(radius_.size() - 1);
+        for (auto i = 0 ; i < radius_.size(); ++i) {
+          auto j = a * i;
+          if (j <= 0) {
+            radius_[i] = radius[0];
+            x_offset_[i] = x_offset[0];
+            z_offset_[i] = z_offset[0];
+          } else if (j >= radius.size() - 1) {
+            radius_[i] = radius[radius.size() - 1];
+            x_offset_[i] = x_offset[radius.size() - 1];
+            z_offset_[i] = z_offset[radius.size() - 1];
+          } else {
+            auto j0 = (std::size_t)std::floor(j);
+            auto j1 = (std::size_t)std::ceil(j);
+            auto t = j1 - j0;
+            radius_[i] = (1 - t) * radius[j0] + t * radius[j1];
+            x_offset_[i] = (1 - t) * x_offset[j0] + t * x_offset[j1];
+            z_offset_[i] = (1 - t) * z_offset[j0] + t * z_offset[j1];
+          }
+        }
       }
       update_geometry();
     }
