@@ -114,3 +114,6 @@ _skbuild/
 
 # Ignore ctags
 tags
+
+# setuptools_scm
+_version.py

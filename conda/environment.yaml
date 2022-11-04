@@ -1,0 +1,10 @@
+name: multem
+channels:
+  - conda-forge
+  - james.parkhurst
+dependencies:
+  - python=3.9
+  - conda-build
+  - conda-verify
+  - anaconda-client
+  - cudatoolkit-dev

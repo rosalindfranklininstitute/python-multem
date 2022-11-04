@@ -1,0 +1,39 @@
+{% set name = "python-multem" %}
+{% set version = "0.2.9" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  path: ..
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - numpy
+    - pip
+    - python
+  run:
+    - cmake
+    - fftw
+    - cudatoolkit
+    - numpy
+    - python
+
+test:
+  imports:
+    - multem
+  requires:
+    - mock
+    - pytest
+    - pytest-cov
+
+about:
+  summary: "A Python wrapper for MULTEM"

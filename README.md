@@ -16,7 +16,14 @@ export CUDACXX=${PATH_TO_CUDA}/bin/nvcc
 python -m pip install git+https://github.com/rosalindfranklininstitute/python-multem.git@master
 ```
 
-To install from source, clone this repository and then do the following:
+To install from source, clone this repository. The repository has a submodule
+for pybind11 so after cloning the repository run
+
+```sh
+git submodule update --init --recursive
+```
+
+Then do the following:
 
 ```sh
 export CUDACXX=${PATH_TO_CUDA}/bin/nvcc

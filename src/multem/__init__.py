@@ -8,6 +8,14 @@
 # This code is distributed under the GPLv3 license, a copy of
 # which is included in the root directory of this package.
 #
+
+
+try:
+    from multem._version import version as __version__
+except ImportError:
+    __version__ = "unknown"
+
+
 import numpy
 from multem_ext import *  # noqa
 
