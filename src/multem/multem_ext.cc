@@ -1301,6 +1301,10 @@ PYBIND11_MODULE(multem_ext, m)
       &multem::compute_projected_potential, 
       py::call_guard<py::gil_scoped_release>());
   m.def(
+      "compute_projected_potential", 
+      &multem::compute_projected_potential_with_ice_approximation, 
+      py::call_guard<py::gil_scoped_release>());
+  m.def(
       "compute_ctf", 
       &multem::compute_ctf, 
       py::call_guard<py::gil_scoped_release>());

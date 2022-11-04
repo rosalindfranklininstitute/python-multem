@@ -952,19 +952,18 @@ namespace multem {
      */
     struct MaskAndNormalize {
     
-      const double mean;
-      const double sdev;
+      const double a;
+      const double b;
 
-      MaskAndNormalize(double m, double s):
-        mean(m),
-        sdev(s) {
-        MULTEM_ASSERT(sdev > 0);
+      MaskAndNormalize(double a_, double b_):
+        a(a_),
+        b(b_) {
       }
 
       template <typename T, typename U>
       DEVICE_CALLABLE
       U operator()(const T m, const U x) const {
-        return m*(x - mean) / sdev;
+        return m*(a * x + b);
       }
     };
 
@@ -1170,19 +1169,20 @@ namespace multem {
         double sdev = std::sqrt(thrust::transform_reduce(
             random_field_.begin(),
             random_field_.end(), 
-            mt::functor::square_dif<double, double>(0), 
+            mt::functor::square_dif<double, double>(mean), 
             double(0), 
             mt::functor::add<double>()) / random_field_.size());
         
         // Normalize by the variance
         MULTEM_ASSERT(sigma > 0);
+        MULTEM_ASSERT(sdev > 0);
         thrust::transform(
             mask_.begin(),
             mask_.end(),
             random_field_.begin(),
             random_field_.begin(),
-            MaskAndNormalize(mean-mu*sdev/sigma, sdev/sigma));
-
+            MaskAndNormalize(sigma/sdev, mu - mean*sigma/sdev));
+        
         // Toggle real/imag
         fft_data_counter_++;
       }
@@ -1237,26 +1237,26 @@ namespace multem {
         };
         std::vector<double> Y = {
           1.0000000,
-          0.9868732,
-          0.9720930,
-          0.9315379,
-          0.8893554,
-          0.8402407,
-          0.7681939,
-          0.6914852,
-          0.6185248,
-          0.5534004,
-          0.4850052,
-          0.4170338,
-          0.3542885,
-          0.2959747,
-          0.2525410,
-          0.2099790,
-          0.1738472,
-          0.1448691,
-          0.1204419,
-          0.1010022,
-          0.0822352,
+          0.9869169,
+          0.9721861,
+          0.9314034,
+          0.8891530,
+          0.8399952,
+          0.7683486,
+          0.6905079,
+          0.6183030,
+          0.5508759,
+          0.4882256,
+          0.4198879,
+          0.3569115,
+          0.3002320,
+          0.2496320,
+          0.2069645,
+          0.1744770,
+          0.1455832,
+          0.1215575,
+          0.1005858,
+          0.0829289,
         };
         MULTEM_ASSERT(X.size() == Y.size());
         return interpolate(pixel_area, X.begin(), X.end(), Y.begin());
@@ -1291,26 +1291,26 @@ namespace multem {
         };
         std::vector<double> Y = {
           1.0000000,
-          0.9697656,
-          0.8790622,
-          0.6827796,
-          0.5573588,
-          0.4375420,
-          0.3056626,
-          0.2061332,
-          0.1434589,
-          0.1001260,
-          0.0675216,
-          0.0428132,
-          0.0258417,
-          0.0148095,
-          0.0090871,
-          0.0057065,
-          0.0035169,
-          0.0021199,
-          0.0013119,
-          0.0008909,
-          0.0005337,
+          0.9700153,
+          0.8800613,
+          0.6806234,
+          0.5554587,
+          0.4366297,
+          0.3030281,
+          0.2042889,
+          0.1415119,
+          0.0977480,
+          0.0653799,
+          0.0399950,
+          0.0239591,
+          0.0142913,
+          0.0086151,
+          0.0051690,
+          0.0029370,
+          0.0019504,
+          0.0011146,
+          0.0007561,
+          0.0003838,
         };
         MULTEM_ASSERT(X.size() == Y.size());
         return interpolate(pixel_area, X.begin(), X.end(), Y.begin());
@@ -1322,10 +1322,9 @@ namespace multem {
       template <typename Iterator>
       double interpolate(double x, Iterator xfirst, Iterator xlast, Iterator yfirst) const {
         std::size_t size = xlast - xfirst;
+        MULTEM_ASSERT(size >= 2);
         std::size_t index = 0;
-        if (x > *xfirst) {
-          while ((index < size-2) && (x > *(xfirst+index))) ++index;
-        }
+        while ((index < size-1) && (*(xfirst+index+1) < x)) ++index;
         double x0 = *(xfirst+index);
         double y0 = *(yfirst+index);
         double x1 = *(xfirst+index+1);
@@ -1526,6 +1525,88 @@ namespace multem {
         double z_0 = projected_potential.slicing.slice[islice].z_0;
         double z_e = projected_potential.slicing.slice[islice].z_e;
         projected_potential(islice, V);
+        mt::fft2_shift(input_multislice.grid_2d, V);
+        V_host.assign(V.begin(), V.end());
+        MULTEM_ASSERT(input_multislice.grid_2d.nx >= 0);
+        MULTEM_ASSERT(input_multislice.grid_2d.ny >= 0);
+        callback(
+            z_0, 
+            z_e, 
+            Image<double>(V_host.data(), 
+              Image<double>::shape_type({
+                (std::size_t)input_multislice.grid_2d.nx,
+                (std::size_t)input_multislice.grid_2d.ny})));
+      }
+
+      // Syncronize stream
+      stream.synchronize();
+      
+      // Get the results
+      output_multislice.gather();
+      output_multislice.clean_temporal();
+
+      // If there was an error then throw an exception
+      if (DeviceType == mt::e_device) {
+        auto err = cudaGetLastError();
+        if (err != cudaSuccess) {
+          throw multem::Error(__FILE__, __LINE__, cudaGetErrorString(err));
+        }
+      }
+    }
+    
+    /**
+     * Run the multislice simulation
+     * @param system_conf The system configuration
+     * @param input_multislice The input object
+     * @param output_multislice The output object
+     */
+    template <typename FloatType, mt::eDevice DeviceType, typename Masker>
+    void run_projected_potential_internal(
+      const mt::System_Configuration &system_conf,
+      mt::Input_Multislice<FloatType> &input_multislice,
+      mt::Output_Multislice<FloatType> &output_multislice,
+      const Masker &masker,
+      projected_potential_callback callback) {
+  
+      // Set the system configration    
+      input_multislice.system_conf = system_conf;
+
+      // Open a stream
+      mt::Stream<DeviceType> stream(system_conf.nstream);
+
+      // Create the FFT object
+      mt::FFT<FloatType, DeviceType> fft_2d;
+      fft_2d.create_plan_2d(
+        input_multislice.grid_2d.ny, 
+        input_multislice.grid_2d.nx, 
+        system_conf.nstream);
+
+      // Setup the multislice simulation 
+      mt::Projected_Potential<FloatType, DeviceType> projected_potential;
+      projected_potential.set_input_data(&input_multislice, &stream);
+   
+      // Compute the pixel sizes
+      double x_pixel_size = input_multislice.atoms.l_x / input_multislice.grid_2d.nx;
+      double y_pixel_size = input_multislice.atoms.l_y / input_multislice.grid_2d.ny;
+
+      // Setup the ice potential approximation
+      IcePotentialApproximation<FloatType, DeviceType> potential_function;
+      potential_function.set_fft_2d(&fft_2d);
+      potential_function.set_grid(input_multislice.grid_2d);
+      potential_function.set_masker(masker);
+      potential_function.set_pixel_size(x_pixel_size, y_pixel_size);
+      
+      // Set the input data
+      output_multislice.set_input_data(&input_multislice);
+
+      // Perform the multislice simulation
+      mt::Vector<FloatType, DeviceType> V(input_multislice.grid_2d.nxy());
+      mt::Vector<FloatType, mt::e_host> V_host(input_multislice.grid_2d.nxy());
+      for (auto islice = 0; islice < projected_potential.slicing.slice.size(); ++islice) {
+        double z_0 = projected_potential.slicing.slice[islice].z_0;
+        double z_e = projected_potential.slicing.slice[islice].z_e;
+        projected_potential(islice, V);
+        potential_function(z_0, z_e, V);  
         mt::fft2_shift(input_multislice.grid_2d, V);
         V_host.assign(V.begin(), V.end());
         MULTEM_ASSERT(input_multislice.grid_2d.nx >= 0);
@@ -2139,6 +2220,42 @@ namespace multem {
     return detail::write_output_multislice(output_multislice);
   }
 
+  /**
+   * Run the multislice simulation. 
+   * @param config The system configuration
+   * @param input The input object
+   * @returns The output results
+   */
+  template <typename FloatType, mt::eDevice DeviceType, typename Masker>
+  Output run_projected_potential(
+      SystemConfiguration config, 
+      Input input,
+      const Masker &masker,
+      projected_potential_callback callback) {
+    
+    // Add a couple of hydrogen atoms at extreme z values. This is needed
+    // because if multem has no atoms it gets confused. By adding an atom at
+    // the minimum and maximum Z locations we make multem create slices between
+    // those two atoms.
+    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmin(), 0, 1, 0, 0));
+    input.spec_atoms.push_back(Atom(1, 0, 0, masker.zmax(), 0, 1, 0, 0));
+
+    // Initialise the system configuration and input structures 
+    auto system_conf = detail::read_system_configuration(config);
+    auto input_multislice = detail::read_input_multislice<FloatType>(input);
+    input_multislice.system_conf = system_conf;
+
+    // Create the output structure
+    mt::Output_Multislice<FloatType> output_multislice;
+   
+    // Run the simulation 
+    detail::run_projected_potential_internal<FloatType, DeviceType, Masker>(
+      system_conf, input_multislice, output_multislice, masker, callback);
+
+    // Return the output struct
+    return detail::write_output_multislice(output_multislice);
+  }
+
   Output compute_projected_potential(
       SystemConfiguration config, 
       Input input,
@@ -2152,6 +2269,27 @@ namespace multem {
       result = run_projected_potential<float, mt::e_device>(config, input, callback);
     } else if (config.device == "device" && config.precision == "double") {
       result = run_projected_potential<double, mt::e_device>(config, input, callback);
+    } else {
+      MULTEM_ASSERT(config.device == "host" || config.device == "device");
+      MULTEM_ASSERT(config.precision == "float" || config.precision == "double");
+    } 
+    return result;
+  }
+  
+  Output compute_projected_potential_with_ice_approximation(
+      SystemConfiguration config, 
+      Input input,
+      const Masker &masker,
+      projected_potential_callback callback) {
+    Output result;
+    if (config.device == "host" && config.precision == "float") {
+      result = run_projected_potential<float, mt::e_host, Masker>(config, input, masker, callback);
+    } else if (config.device == "host" && config.precision == "double") {
+      result = run_projected_potential<double, mt::e_host, Masker>(config, input, masker, callback);
+    } else if (config.device == "device" && config.precision == "float") {
+      result = run_projected_potential<float, mt::e_device, Masker>(config, input, masker, callback);
+    } else if (config.device == "device" && config.precision == "double") {
+      result = run_projected_potential<double, mt::e_device, Masker>(config, input, masker, callback);
     } else {
       MULTEM_ASSERT(config.device == "host" || config.device == "device");
       MULTEM_ASSERT(config.precision == "float" || config.precision == "double");

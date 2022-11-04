@@ -794,6 +794,18 @@ namespace multem {
       SystemConfiguration config, 
       Input input, 
       projected_potential_callback callback);
+  
+  /**
+   * Run the simulation
+   * @param config The system configuration
+   * @param input The input
+   * @returns The simulation results
+   */
+  Output compute_projected_potential_with_ice_approximation(
+      SystemConfiguration config, 
+      Input input, 
+      const Masker &masker,
+      projected_potential_callback callback);
 
   /**
    * @returns True/False if the GPU is available
