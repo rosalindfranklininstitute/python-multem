@@ -973,15 +973,17 @@ namespace multem {
     template <typename T>
     struct AddRandomFieldAndPotential {
 
-      T t_;
+      T a_;
+      T b_;
     
-      AddRandomFieldAndPotential(T t)
-        : t_(t) {}
+      AddRandomFieldAndPotential(T a, T b)
+        : a_(a), b_(b) {}
 
       DEVICE_CALLABLE
       T operator()(const T r, const T p) const {
-        return p+r;//(p > 0 ? p : p + r);
-        //return (p > t_ ? p : p + r);
+        //return p + r * b_ / (a_ * sqrt(p) + b_);
+        //return p+r;//(p > 0 ? p : p + r);
+        return p + (p > 0 ? r * 0.3333333 : r);
       }
     };
 
@@ -1380,7 +1382,7 @@ namespace multem {
             V_0.begin(),
             V_0.begin(), 
             //AddRandomFieldAndPotential<FloatType>(mean*0.66));
-            AddRandomFieldAndPotential<FloatType>(mean*0));
+            AddRandomFieldAndPotential<FloatType>(1, 0.05));
       }
     };
    
