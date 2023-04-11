@@ -18,7 +18,6 @@ def random_image_complex_double(shape=(10, 10)):
 
 
 def test_data():
-
     m2psi_tot = random_image_double()
     m2psi_coh = random_image_double()
     psi_coh = random_image_complex_double()
@@ -47,7 +46,6 @@ def test_data():
 
 
 def test_output():
-
     d1 = multem.Data()
     d2 = multem.Data()
     d3 = multem.Data()

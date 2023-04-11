@@ -2,7 +2,6 @@ import multem
 
 
 def test_crystal_parameters():
-
     crystal_parameters = multem.CrystalParameters()
     crystal_parameters.na = 10
     crystal_parameters.nb = 20

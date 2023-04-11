@@ -3,7 +3,6 @@ import pickle
 
 
 def test_system_configuration():
-
     system_conf = multem.SystemConfiguration()
     system_conf.device = "device"
     system_conf.precision = "precision"

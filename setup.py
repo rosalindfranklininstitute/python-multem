@@ -17,7 +17,6 @@ class CMakeBuild(build_ext):
     """
 
     def build_extensions(self):
-
         # Set the cmake directory
         cmake_lists_dir = os.path.abspath(".")
 

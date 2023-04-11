@@ -2,7 +2,6 @@ import multem
 
 
 def test_stem_detector():
-
     stem_detector = multem.STEMDetector()
     stem_detector.type = "Test"
     stem_detector.cir = [(0, 1), (2, 3)]

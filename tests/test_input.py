@@ -5,7 +5,6 @@ import pickle
 
 
 def test_input():
-
     stem_detector = multem.STEMDetector()
     stem_detector.type = "Test"
     stem_detector.cir = [(0, 1), (2, 3)]
