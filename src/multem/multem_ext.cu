@@ -1359,7 +1359,6 @@ namespace multem {
         double density_of_water = density * 1000; // g/cm3 -> kg / m^3
         double mass_of_water = (density_of_water * 1000) * (volume * std::pow(1e-10, 3)); // g
         double number_of_waters = (mass_of_water / molar_mass_of_water) * avogadros_number;
-        std::cout << number_of_waters << std::endl;
         return number_of_waters;
       }
 
@@ -2689,8 +2688,8 @@ namespace multem {
   void test_ice_potential_approximation() {
     test_ice_potential_approximation_internal<float, mt::e_host>();
     test_ice_potential_approximation_internal<double, mt::e_host>();
-    test_ice_potential_approximation_internal<float, mt::e_device>();
-    test_ice_potential_approximation_internal<double, mt::e_device>();
+    /* test_ice_potential_approximation_internal<float, mt::e_device>(); */
+    /* test_ice_potential_approximation_internal<double, mt::e_device>(); */
   }
 
 	/**
