@@ -1268,6 +1268,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def("rotation_origin", &multem::Masker::rotation_origin)
     .def("rotation_angle", &multem::Masker::rotation_angle)
     .def("translation", &multem::Masker::translation)
+    .def("ice_parameters", &multem::Masker::ice_parameters)
     .def("set_image_size", &multem::Masker::set_image_size)
     .def("set_pixel_size", &multem::Masker::set_pixel_size)
     .def("set_cube", &multem::Masker::set_cube)
@@ -1275,6 +1276,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def("set_cylinder", &multem::Masker::set_cylinder)
     .def("set_rotation", &multem::Masker::set_rotation)
     .def("set_translation", &multem::Masker::set_translation)
+    .def("set_ice_parameters", &multem::Masker::set_ice_parameters)
     .def("compute", &pybind11::detail::Masker_compute)
     ;
 
@@ -1287,6 +1289,7 @@ PYBIND11_MODULE(multem_ext, m)
     .def_readwrite("s2", &multem::IceParameters::s2)
     .def_readwrite("a1", &multem::IceParameters::a1)
     .def_readwrite("a2", &multem::IceParameters::a2)
+    .def_readwrite("density", &multem::IceParameters::density)
     ;
 
   // Expose the simulation function
