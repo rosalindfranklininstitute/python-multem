@@ -1069,6 +1069,30 @@ namespace multem {
 
 
   /**
+   * A class to represent the GRF ice parameters
+   */
+  class IceParameters {
+  public:
+    
+    double m1;
+    double m2;
+    double s1;
+    double s2;
+    double a1;
+    double a2;
+    double density;
+
+    IceParameters()
+      : m1(0),
+        m2(1.0/2.88),
+        s1(0.731),
+        s2(0.081),
+        a1(0.199),
+        a2(0.801),
+        density(0.91) {}
+  };
+
+  /**
    * A class to generate a dynamic mask for a Z slice
    */
   class Masker {
@@ -1222,6 +1246,13 @@ namespace multem {
     }
 
     /**
+     * Get the ice parameters
+     */
+    const IceParameters& ice_parameters() const {
+      return ice_parameters_;
+    }
+
+    /**
      * Set the image size
      */
     void set_image_size(std::size_t xsize, std::size_t ysize) {
@@ -1304,12 +1335,19 @@ namespace multem {
       }
     }
 
+    /**
+     * Set the ice parameters
+     */
+    void set_ice_parameters(const IceParameters &ice_parameters) {
+      ice_parameters_ = ice_parameters;
+    }
 
   protected:
 
     Shape shape_;
     CuboidMasker cuboid_masker_;
     CylinderMasker cylinder_masker_;
+    IceParameters ice_parameters_;
   };
 }
 

@@ -1278,6 +1278,17 @@ PYBIND11_MODULE(multem_ext, m)
     .def("compute", &pybind11::detail::Masker_compute)
     ;
 
+  // Wrap the multem::IceParameters class
+  py::class_<multem::IceParameters>(m, "IceParameters")
+    .def(py::init<>())
+    .def_readwrite("m1", &multem::IceParameters::m1)
+    .def_readwrite("m2", &multem::IceParameters::m2)
+    .def_readwrite("s1", &multem::IceParameters::s1)
+    .def_readwrite("s2", &multem::IceParameters::s2)
+    .def_readwrite("a1", &multem::IceParameters::a1)
+    .def_readwrite("a2", &multem::IceParameters::a2)
+    ;
+
   // Expose the simulation function
   //
   // Since this function takes a long time to run and pybind by default holds
