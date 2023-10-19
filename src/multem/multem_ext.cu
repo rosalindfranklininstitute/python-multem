@@ -31,10 +31,10 @@ namespace multem {
       std::ostringstream msg;
       msg << prefix << "precision:   " << self.precision << "\n";
       msg << prefix << "device:      " << self.device << "\n";
-      msg << prefix << "cpu_ncores:  " << self.precision << "\n";
-      msg << prefix << "cpu_nthread: " << self.precision << "\n";
-      msg << prefix << "gpu_device:  " << self.precision << "\n";
-      msg << prefix << "gpu_nstream: " << self.precision << "\n";
+      msg << prefix << "cpu_ncores:  " << self.cpu_ncores << "\n";
+      msg << prefix << "cpu_nthread: " << self.cpu_nthread << "\n";
+      msg << prefix << "gpu_device:  " << self.gpu_device << "\n";
+      msg << prefix << "gpu_nstream: " << self.gpu_nstream << "\n";
       return msg.str();
     }
     
