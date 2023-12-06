@@ -930,9 +930,9 @@ namespace multem {
         double Oy = interpolate_y.interpolate(t);
         double Oz = interpolate_z.interpolate(t);
         double r = interpolate_r.interpolate(t);
-        double x = A_[0] - t * (B_[0] - A_[0]) + Oz;
-        double y = A_[1] - t * (B_[1] - A_[1]) + Oz;
-        double z = A_[2] - t * (B_[2] - A_[2]) + Oz;
+        double x = A_[0] + t * (B_[0] - A_[0]) + Oz;
+        double y = A_[1] + t * (B_[1] - A_[1]) + Oz;
+        double z = A_[2] + t * (B_[2] - A_[2]) + Oz;
         zmin_ = std::min(zmin_, z - r);
         zmax_ = std::max(zmax_, z + r);
       }
