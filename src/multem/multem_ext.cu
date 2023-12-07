@@ -586,32 +586,88 @@ namespace multem {
     template <typename T>
     struct CuboidMaskSlice {
 
-      double x0;
-      double x1;
-      double y0;
-      double y1;
+      double u0;
+      double u1;
+      double u2;
+      double v0;
+      double v1;
+      double v2;
+      double w0;
+      double w1;
+      double w2;
+      double zc;
+      double pixel_size;
+      double u_p1;
+      double u_p2;
+      double v_p1;
+      double v_p3;
+      double w_p1;
+      double w_p4;
       std::size_t xsize;
       std::size_t ysize;
 
       CuboidMaskSlice(
-          double x0_,
-          double x1_,
-          double y0_,
-          double y1_,
+          double * p1_,
+          double * p2_,
+          double * p3_,
+          double * p4_,
+          double zc_,
+          double pixel_size_,
           std::size_t xsize_,
-          std::size_t ysize_)
-        : x0(x0_),
-          x1(x1_),
-          y0(y0_),
-          y1(y1_),
+          std::size_t ysize_) :
+          zc(zc_),
+          pixel_size(pixel_size_),
           xsize(xsize_),
-          ysize(ysize_) {}
+          ysize(ysize_) {
+
+        // Vector P1 -> P2
+        u0 = p2_[0] - p1_[0];
+        u1 = p2_[1] - p1_[1];
+        u2 = p2_[2] - p1_[2];
+        
+        // Vector P1 -> P3
+        v0 = p3_[0] - p1_[0];
+        v1 = p3_[1] - p1_[1];
+        v2 = p3_[2] - p1_[2];
+        
+        // Vector P1 -> P4
+        w0 = p4_[0] - p1_[0];
+        w1 = p4_[1] - p1_[1];
+        w2 = p4_[2] - p1_[2];
+       
+        // Dot products u.p1, u.p2, v.p1, v.p3, w.p1, w.p4
+        u_p1 = u0*p1_[0] + u1*p1_[1] + u2*p1_[2];
+        u_p2 = u0*p2_[0] + u1*p2_[1] + u2*p2_[2];
+        v_p1 = v0*p1_[0] + v1*p1_[1] + v2*p1_[2];
+        v_p3 = v0*p3_[0] + v1*p3_[1] + v2*p3_[2];
+        w_p1 = w0*p1_[0] + w1*p1_[1] + w2*p1_[2];
+        w_p4 = w0*p4_[0] + w1*p4_[1] + w2*p4_[2];
+
+        // order the tests
+        if (u_p1 > u_p2) std::swap(u_p1, u_p2);
+        if (v_p1 > v_p3) std::swap(v_p1, v_p3);
+        if (w_p1 > w_p4) std::swap(w_p1, w_p4);
+      }
 
       DEVICE_CALLABLE
       T operator()(size_t index) const {
         size_t i = index / ysize;
         size_t j = index - i * ysize;
-        return (i >= x0 && i < x1 && j >= y0 && j < y1);
+
+        // The coordinate in microscope scape
+        double x = (i + 0.5) * pixel_size;
+        double y = (j + 0.5) * pixel_size;
+        double z = zc;
+         
+        // Dot product u.x, v.x and w.x
+        double u_x = u0*x + u1*y + u2*z;
+        double v_x = v0*x + v1*y + v2*z;
+        double w_x = w0*x + w1*y + w2*z;
+
+        // Dot product must be between bounds
+        return ((u_x >= u_p1) && (u_x < u_p2)) &&
+               ((v_x >= v_p1) && (v_x < v_p3)) &&
+               ((w_x >= w_p1) && (w_x < w_p4));
       }
     };
 
@@ -748,53 +804,34 @@ namespace multem {
      */
     template <typename Iterator>
     void compute_mask(const CuboidMasker &masker, double zs, double ze, Iterator iterator) {
-
-      // Compute the min and max x
-      auto compute_xmin_and_xmax = [](
-          double z, 
-          CuboidMasker::vector2 a, 
-          CuboidMasker::vector2 b, 
-          double &x0, 
-          double &x1) {
-        if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
-          double x = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
-          x0 = std::min(x0, x);
-          x1 = std::max(x1, x);
-        }
-      };
-
       // The middle z coordinate of the slice
       double zc = (zs + ze) / 2.0;
         
-      // Compute min and max y
-      double y0 = masker.ymin();
-      double y1 = masker.ymax();
-      double x0 = masker.xmax();
-      double x1 = masker.xmin();
-      compute_xmin_and_xmax(zc, masker.points()[0], masker.points()[1], x0, x1);
-      compute_xmin_and_xmax(zc, masker.points()[1], masker.points()[2], x0, x1);
-      compute_xmin_and_xmax(zc, masker.points()[2], masker.points()[3], x0, x1);
-      compute_xmin_and_xmax(zc, masker.points()[3], masker.points()[0], x0, x1);
+      // Get the points defining the cuboid
+      auto p1 = masker.points()[0];
+      auto p2 = masker.points()[1];
+      auto p3 = masker.points()[2];
+      auto p4 = masker.points()[3];
 
       // Only do something if the slice is within range
-      if (zs < masker.zmax() && ze > masker.zmin() & y1 > y0) {
-
-        // Convert to pixels
-        x0 /= masker.pixel_size();
-        x1 /= masker.pixel_size();
-        y0 /= masker.pixel_size();
-        y1 /= masker.pixel_size();
-
+      if (zs < masker.zmax() && ze > masker.zmin()) {
         thrust::counting_iterator<size_t> indices(0);
         thrust::transform(
             indices,
             indices + masker.image_size(),
             iterator, 
-            CuboidMaskSlice<bool>(x0, x1, y0, y1, masker.xsize(), masker.ysize()));
+            CuboidMaskSlice<bool>(
+              &p1[0], 
+              &p2[0], 
+              &p3[0], 
+              &p4[0], 
+              zc, 
+              masker.pixel_size(), 
+              masker.xsize(), 
+              masker.ysize()));
       } else {
         thrust::fill(iterator, iterator + masker.image_size(), 0);
       }
-
     }
     
     /**
@@ -2711,12 +2748,13 @@ namespace multem {
     MULTEM_ASSERT(masker.image_size() == 200*100);
     MULTEM_ASSERT(masker.pixel_size() == 0.5);
     MULTEM_ASSERT(masker.shape() == Masker::Cuboid);
-    MULTEM_ASSERT(std::abs(masker.xmin() - (10 - 40 + 4)) < 1e-5);
+    std::cout << masker.xmin() << std::endl;
+    MULTEM_ASSERT(std::abs(masker.xmin() - (10 + 4)) < 1e-5);
     MULTEM_ASSERT(std::abs(masker.ymin() - (11 + 5)) < 1e-5);
-    MULTEM_ASSERT(std::abs(masker.zmin() - (12 + 6)) < 1e-5);
-    MULTEM_ASSERT(std::abs(masker.xmax() - (10 + 4)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmin() - (12 - 20 + 6)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.xmax() - (10 + 40 + 4)) < 1e-5);
     MULTEM_ASSERT(std::abs(masker.ymax() - (11 + 5 + 30)) < 1e-5);
-    MULTEM_ASSERT(std::abs(masker.zmax() - (12 + 20 + 6)) < 1e-5);
+    MULTEM_ASSERT(std::abs(masker.zmax() - (12 + 6)) < 1e-5);
     MULTEM_ASSERT(masker.rotation_origin()[0] == 10);
     MULTEM_ASSERT(masker.rotation_origin()[1] == 11);
     MULTEM_ASSERT(masker.rotation_origin()[2] == 12);

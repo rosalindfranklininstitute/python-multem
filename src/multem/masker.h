@@ -261,8 +261,8 @@ namespace multem {
         offset_({0, 0, 0}),
         size_({0, 0, 0}),
         translation_({ 0, 0, 0 }),
-        rotation_origin_({0, 0, 0}),
-        rotation_angle_(0) {
+        rotation_centre_({0, 0, 0}),
+        rotation_vector_({0, 0, 0}) {
       update_geometry();    
     }
 
@@ -354,14 +354,21 @@ namespace multem {
      * Get the rotation origin
      */
     const vector3& rotation_origin() const {
-      return rotation_origin_;
+      return rotation_centre_;
     }
     
     /**
      * Get the rotation angle
      */
     double rotation_angle() const {
-      return rotation_angle_;
+      return detail::norm(rotation_vector_);
+    }
+    
+    /**
+     * Get the rotation vector
+     */
+    const vector3& rotation_vector() const {
+      return rotation_vector_;
     }
 
     /**
@@ -374,7 +381,7 @@ namespace multem {
     /**
      * Get the points
      */
-    const std::array<vector2, 4>& points() const {
+    const std::array<vector3, 8>& points() const {
       return points_;
     }
 
@@ -422,8 +429,8 @@ namespace multem {
      * Set a rotation about the x axis
      */
     void set_rotation(std::array<double, 3> centre, std::array<double, 3> rotvec) {
-      rotation_origin_ = centre;
-      rotation_angle_ = rotvec[1];
+      rotation_centre_ = centre;
+      rotation_vector_ = rotvec;
       update_geometry();
     }
 
@@ -431,6 +438,15 @@ namespace multem {
      * Update the geometry
      */
     void update_geometry() {
+      
+      // The sample coordinate system can be rotated relative to the
+      // microscope coordinate system by a rotation defined by the input
+      // rotation vector and the centre of rotation. A point in the microscope
+      // coordinate system can be found by rotating the sample about the
+      // rotation centre
+      //
+      // point(microscope) = Rs * (point(sample) - centre) + centre + translation
+      vector3 Rs = rotation_vector_;
       
       // The extreme points
       double x0 = offset_[0];
@@ -440,63 +456,32 @@ namespace multem {
       double y1 = y0 + size_[1];
       double z1 = z0 + size_[2];
      
-      // The x/z coords of the cuboid
-      points_[0] = { x0, z0 };
-      points_[1] = { x0, z1 };
-      points_[2] = { x1, z1 };
-      points_[3] = { x1, z0 };
+      // The x/y/z coords of the cuboid
+      points_[0] = { x0, y0, z0 };
+      points_[1] = { x1, y0, z0 };
+      points_[2] = { x0, y1, z0 };
+      points_[3] = { x0, y0, z1 };
+      points_[4] = { x0, y1, z1 };
+      points_[5] = { x1, y0, z1 };
+      points_[6] = { x1, y1, z0 };
+      points_[7] = { x1, y1, z1 };
 
-      // Rotate coords
-      detail::rotate2d_around_origin(
-          rotation_origin_[0], 
-          rotation_origin_[2], 
-          rotation_angle_,
-          points_[0][0], points_[0][1]);
-      detail::rotate2d_around_origin(
-          rotation_origin_[0], 
-          rotation_origin_[2], 
-          rotation_angle_,
-          points_[1][0], points_[1][1]);
-      detail::rotate2d_around_origin(
-          rotation_origin_[0], 
-          rotation_origin_[2], 
-          rotation_angle_,
-          points_[2][0], points_[2][1]);
-      detail::rotate2d_around_origin(
-          rotation_origin_[0], 
-          rotation_origin_[2], 
-          rotation_angle_,
-          points_[3][0], points_[3][1]);
-
-      // Translate the points
-      y0 += translation_[1];
-      y1 += translation_[1];
-      points_[0][0] += translation_[0];
-      points_[0][1] += translation_[2];
-      points_[1][0] += translation_[0];
-      points_[1][1] += translation_[2];
-      points_[2][0] += translation_[0];
-      points_[2][1] += translation_[2];
-      points_[3][0] += translation_[0];
-      points_[3][1] += translation_[2];
+      // Transform the points at the corners of the cuboid
+      for (auto i = 0; i < points_.size(); ++i) {
+        points_[i] = transform_cuboid_to_microscope(points_[i], Rs); 
+      }
 
       // Compute the max and min
-      x0 = std::min(
-          std::min(points_[0][0], points_[1][0]), 
-          std::min(points_[2][0], points_[3][0]));
-      x1 = std::max(
-          std::max(points_[0][0], points_[1][0]), 
-          std::max(points_[2][0], points_[3][0]));
-      z0 = std::min(
-          std::min(points_[0][1], points_[1][1]), 
-          std::min(points_[2][1], points_[3][1]));
-      z1 = std::max(
-          std::max(points_[0][1], points_[1][1]), 
-          std::max(points_[2][1], points_[3][1]));
-
-      // Set the min and max
-      pmin_ = { x0, y0, z0 };
-      pmax_ = { x1, y1, z1 };
+      pmin_ = { 1e10, 1e10, 1e10 };
+      pmax_ = { -1e10, -1e10, -1e10 };
+      for (auto i = 0; i < points_.size(); ++i) {
+        pmin_[0] = std::min(pmin_[0], points_[i][0]);
+        pmin_[1] = std::min(pmin_[1], points_[i][1]);
+        pmin_[2] = std::min(pmin_[2], points_[i][2]);
+        pmax_[0] = std::max(pmax_[0], points_[i][0]);
+        pmax_[1] = std::max(pmax_[1], points_[i][1]);
+        pmax_[2] = std::max(pmax_[2], points_[i][2]);
+      }
     }
     
     /**
@@ -506,48 +491,70 @@ namespace multem {
     void compute_mask(double zs, double ze, Iterator iterator) const {
       MULTEM_ASSERT(ze > zs);
 
-      // Compute the min and max y
-      auto compute_xmin_and_xmax = [](double z, vector2 a, vector2 b, double &x0, double &x1) {
-        if (z >= std::min(a[1], b[1]) && z < std::max(a[1], b[1])) {
-          double x = (z - a[1]) * (b[0] - a[0]) / (b[1] - a[1]) + a[0];
-          x0 = std::min(x0, x);
-          x1 = std::max(x0, x);
-        }
-      };
-
       // The middle z coordinate of the slice
       double zc = (zs + ze) / 2.0;
+        
+      // Get the points defining the cuboid
+      auto p1 = points_[0];
+      auto p2 = points_[1];
+      auto p3 = points_[2];
+      auto p4 = points_[3];
 
       // Only do something if the slice is within range
       if (zs < zmax() && ze > zmin()) {
+
+        // Vector P1 -> P2
+        auto u0 = p2[0] - p1[0];
+        auto u1 = p2[1] - p1[1];
+        auto u2 = p2[2] - p1[2];
         
-        // Compute min and max y
-        double y0 = ymin();
-        double y1 = ymax();
-				double x0 = xmax();
-				double x1 = xmin();
-        compute_xmin_and_xmax(zc, points_[0], points_[1], x0, x1);
-        compute_xmin_and_xmax(zc, points_[1], points_[2], x0, x1);
-        compute_xmin_and_xmax(zc, points_[2], points_[3], x0, x1);
-        compute_xmin_and_xmax(zc, points_[3], points_[0], x0, x1);
-        if (x1 > x0) {
+        // Vector P1 -> P3
+        auto v0 = p3[0] - p1[0];
+        auto v1 = p3[1] - p1[1];
+        auto v2 = p3[2] - p1[2];
+        
+        // Vector P1 -> P4
+        auto w0 = p4[0] - p1[0];
+        auto w1 = p4[1] - p1[1];
+        auto w2 = p4[2] - p1[2];
+       
+        // Dot products u.p1, u.p2, v.p1, v.p3, w.p1, w.p4
+        auto u_p1 = u0*p1[0] + u1*p1[1] + u2*p1[2];
+        auto u_p2 = u0*p2[0] + u1*p2[1] + u2*p2[2];
+        auto v_p1 = v0*p1[0] + v1*p1[1] + v2*p1[2];
+        auto v_p3 = v0*p3[0] + v1*p3[1] + v2*p3[2];
+        auto w_p1 = w0*p1[0] + w1*p1[1] + w2*p1[2];
+        auto w_p4 = w0*p4[0] + w1*p4[1] + w2*p4[2];
 
-          // Convert to pixels
-          x0 /= pixel_size_;
-          x1 /= pixel_size_;
-          y0 /= pixel_size_;
-          y1 /= pixel_size_;
+        // order the tests
+        if (u_p1 > u_p2) std::swap(u_p1, u_p2);
+        if (v_p1 > v_p3) std::swap(v_p1, v_p3);
+        if (w_p1 > w_p4) std::swap(w_p1, w_p4);
 
-          // Compute the slice mask
-          for (std::size_t i = 0; i < xsize_; ++i) {
-            for (std::size_t j = 0; j < ysize_; ++j) {
-              if (i >= x0 && i < x1 && j >= y0 && j < y1) {
-                *iterator = true;
-              } else {
-                *iterator = false;
-              }
-              ++iterator;
+        // Compute the slice mask
+        for (std::size_t i = 0; i < xsize_; ++i) {
+          for (std::size_t j = 0; j < ysize_; ++j) {
+
+            // The coordinate in microscope scape
+            double x = (i + 0.5) * pixel_size_;
+            double y = (j + 0.5) * pixel_size_;
+            double z = zc;
+
+
+            // Dot product u.x, v.x and w.x
+            double u_x = u0*x + u1*y + u2*z;
+            double v_x = v0*x + v1*y + v2*z;
+            double w_x = w0*x + w1*y + w2*z;
+      
+            // Dot product must be between bounds
+            if (((u_x >= u_p1) && (u_x < u_p2)) &&
+                ((v_x >= v_p1) && (v_x < v_p3)) &&
+                ((w_x >= w_p1) && (w_x < w_p4))) {
+              *iterator = true;
+            } else {
+              *iterator = false;
             }
+            ++iterator;
           }
         }
       } else {
@@ -556,6 +563,22 @@ namespace multem {
     }
 
   protected:
+    
+    /**
+     * Transform a coordinate from cuboid coordinate system to microscope
+     * coordinate system
+     */
+    vector3 transform_cuboid_to_microscope(vector3 a, vector3 Rs) const {
+        auto b = a;
+        b[0] -= rotation_centre_[0];
+        b[1] -= rotation_centre_[1];
+        b[2] -= rotation_centre_[2];
+        b = detail::rotate(Rs, b);
+        b[0] += rotation_centre_[0] + translation_[0];
+        b[1] += rotation_centre_[1] + translation_[1];
+        b[2] += rotation_centre_[2] + translation_[2];
+        return b;
+    }
 
     std::size_t xsize_;
     std::size_t ysize_;
@@ -563,9 +586,9 @@ namespace multem {
     vector3 offset_;
     vector3 size_;
     vector3 translation_;
-    vector3 rotation_origin_;
-    double rotation_angle_;
-    std::array<vector2, 4> points_;
+    vector3 rotation_centre_;
+    vector3 rotation_vector_;
+    std::array<vector3, 8> points_;
     vector3 pmin_;
     vector3 pmax_;
   };
@@ -760,6 +783,13 @@ namespace multem {
      */
     const vector3& rotation_origin() const {
       return rotation_centre_;
+    }
+    
+    /**
+     * Get the rotation vector
+     */
+    const vector3& rotation_vector() const {
+      return rotation_vector_;
     }
     
     /**
