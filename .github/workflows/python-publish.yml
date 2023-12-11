@@ -12,7 +12,12 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    environment: deployment
+    environment: 
+      name: deployment
+      url: https://pypi.org/project/python-parakeet/
+
+    permissions:
+      id-token: write
 
     steps:
     - uses: actions/checkout@v2
