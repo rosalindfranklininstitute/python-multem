@@ -1378,7 +1378,7 @@ namespace multem {
         std::size_t size = xlast - xfirst;
         MULTEM_ASSERT(size >= 2);
         std::size_t index = 0;
-        while ((index < size-1) && (*(xfirst+index+1) < x)) ++index;
+        while ((index < size-2) && (*(xfirst+index+1) < x)) ++index;
         double x0 = *(xfirst+index);
         double y0 = *(yfirst+index);
         double x1 = *(xfirst+index+1);
@@ -2748,7 +2748,6 @@ namespace multem {
     MULTEM_ASSERT(masker.image_size() == 200*100);
     MULTEM_ASSERT(masker.pixel_size() == 0.5);
     MULTEM_ASSERT(masker.shape() == Masker::Cuboid);
-    std::cout << masker.xmin() << std::endl;
     MULTEM_ASSERT(std::abs(masker.xmin() - (10 + 4)) < 1e-5);
     MULTEM_ASSERT(std::abs(masker.ymin() - (11 + 5)) < 1e-5);
     MULTEM_ASSERT(std::abs(masker.zmin() - (12 - 20 + 6)) < 1e-5);
