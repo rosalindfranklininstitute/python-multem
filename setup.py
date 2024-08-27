@@ -57,7 +57,6 @@ def main():
         package_dir={"": "src"},
         packages=find_packages(where="src"),
         install_requires=["numpy"],
-        setup_requires=["setuptools_scm", "pytest-runner"],
         tests_require=tests_require,
         test_suite="tests",
         ext_modules=[Extension("multem_ext", [])],
