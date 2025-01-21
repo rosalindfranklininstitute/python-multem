@@ -434,6 +434,7 @@ namespace multem {
           { mt::eIM_Trans_Cross_Coef, "Trans_Cross_Coef" },
           { mt::eIM_Full_Integration, "Full_Integration" },
           { mt::eIM_none, "none" },
+          { mt::eIM_Partial_Coherent_Higher_Order, "Partial_Coherent_Higher_Order" },
         };
       }
     };
@@ -2405,6 +2406,15 @@ namespace multem {
             psi_in, 
             psi_out);
         break;
+      case mt::eIM_Partial_Coherent_Higher_Order:
+        std::cout << "Hey Hey" << std::endl;
+        mt::apply_PCTF_HO(
+            stream, 
+            input_multislice.grid_2d, 
+            input_multislice.obj_lens, 
+            psi_in, 
+            psi_out);
+          break;
       default:
         break;
     }
