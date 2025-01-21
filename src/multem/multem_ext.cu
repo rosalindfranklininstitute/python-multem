@@ -2407,7 +2407,6 @@ namespace multem {
             psi_out);
         break;
       case mt::eIM_Partial_Coherent_Higher_Order:
-        std::cout << "Hey Hey" << std::endl;
         mt::apply_PCTF_HO(
             stream, 
             input_multislice.grid_2d, 
